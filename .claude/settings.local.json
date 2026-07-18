@@ -28,7 +28,13 @@
       "Bash(/private/tmp/claude-501/-Users-snehapankaj-work-optional-calculator/04cb30b2-b74e-4695-a091-1f46e2a7225c/scratchpad/node_modules/.bin/playwright install *)",
       "Bash(echo \"EXIT:$?\")",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(gh auth *)",
+      "Bash(brew install *)"
     ]
   }
 }

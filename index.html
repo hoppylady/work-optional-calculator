@@ -565,6 +565,48 @@
     height: 12px;
     margin-right: 8px;
   }
+  .chart-legend-note .swatch.retire-mark {
+    background: none;
+    border-left: 2px dashed var(--wine-600);
+    width: 0;
+    height: 12px;
+    margin-right: 8px;
+  }
+
+  .longevity-callout {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    background: rgba(90, 125, 79, 0.10);
+    border: 1px solid rgba(90, 125, 79, 0.28);
+    text-align: center;
+  }
+  .longevity-callout.caution {
+    background: rgba(185, 133, 47, 0.10);
+    border-color: rgba(185, 133, 47, 0.3);
+  }
+  .longevity-headline {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--positive);
+    margin: 0;
+  }
+  .longevity-callout.caution .longevity-headline { color: var(--caution); }
+  .longevity-sub {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-body);
+    margin: 6px 0 0;
+  }
+  .longevity-disclaimer {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 10px auto 0;
+    max-width: 480px;
+    line-height: 1.4;
+  }
 
   .actions-row {
     display: flex;
@@ -1103,8 +1145,15 @@
         <div class="chart-legend-note">
           <span><span class="swatch line"></span>Projected portfolio value</span>
           <span><span class="swatch target"></span>Work optional number</span>
+          <span id="retireLegendItem" style="display:none;"><span class="swatch retire-mark"></span><span id="retireLegendText">Retirement begins</span></span>
           <span id="ssLegendItem" style="display:none;"><span class="swatch ss-mark"></span><span id="ssLegendText">Social Security starts</span></span>
         </div>
+
+        <div class="longevity-callout" id="longevityCallout" style="display:none;">
+          <p class="longevity-headline" id="longevityHeadline">Your money is projected to last.</p>
+          <p class="longevity-sub" id="longevitySub">Your portfolio is projected to still be worth $0 at age 95 — 0 years into retirement.</p>
+        </div>
+        <p class="longevity-disclaimer" id="longevityDisclaimer" style="display:none;">This projection assumes consistent returns and spending — real markets and life are less predictable. This is a simplified educational model, not a guarantee.</p>
 
         <div class="actions-row">
           <button class="primary-btn" id="shareBtn" type="button">Share your result</button>
@@ -1258,6 +1307,13 @@
   var ssBenefitEl = document.getElementById("ssBenefit");
   var ssLegendItemEl = document.getElementById("ssLegendItem");
   var ssLegendTextEl = document.getElementById("ssLegendText");
+  var retireLegendItemEl = document.getElementById("retireLegendItem");
+  var retireLegendTextEl = document.getElementById("retireLegendText");
+
+  var longevityCalloutEl = document.getElementById("longevityCallout");
+  var longevityHeadlineEl = document.getElementById("longevityHeadline");
+  var longevitySubEl = document.getElementById("longevitySub");
+  var longevityDisclaimerEl = document.getElementById("longevityDisclaimer");
 
   var srReturnRef = document.getElementById("srReturnRef");
   var srWithdrawalRef = document.getElementById("srWithdrawalRef");
@@ -1530,42 +1586,79 @@
   var ctx = document.getElementById("growthChart").getContext("2d");
   function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 
-  var ssMarkerPlugin = {
-    id: "ssMarkerPlugin",
-    afterDraw: function (chartInstance) {
-      var age = chartInstance.$ssClaimAge;
+  function pixelForAge(chartInstance, age) {
+    var labels = chartInstance.data.labels;
+    var idx = labels ? labels.indexOf(age) : -1;
+    if (idx === -1) return null;
+    return chartInstance.scales.x.getPixelForValue(idx);
+  }
+
+  function drawDashedMarker(chartInstance, xPixel, color) {
+    var yScale = chartInstance.scales.y;
+    var chartCtx = chartInstance.ctx;
+    chartCtx.save();
+    chartCtx.beginPath();
+    chartCtx.moveTo(xPixel, yScale.top);
+    chartCtx.lineTo(xPixel, yScale.bottom);
+    chartCtx.lineWidth = 1.5;
+    chartCtx.strokeStyle = color;
+    chartCtx.setLineDash([3, 3]);
+    chartCtx.stroke();
+    chartCtx.restore();
+  }
+
+  function drawMarkerLabel(chartInstance, xPixel, lines, topOffset) {
+    var yScale = chartInstance.scales.y;
+    var chartCtx = chartInstance.ctx;
+    chartCtx.save();
+    chartCtx.fillStyle = cssVar("--text-body");
+    chartCtx.font = "11px 'Spline Sans Mono', monospace";
+    chartCtx.textAlign = "center";
+    chartCtx.textBaseline = "top";
+    lines.forEach(function (line, i) {
+      chartCtx.fillText(line, xPixel, yScale.top + topOffset + i * 12);
+    });
+    chartCtx.restore();
+  }
+
+  var phaseAnnotationsPlugin = {
+    id: "phaseAnnotationsPlugin",
+    beforeDraw: function (chartInstance) {
+      var age = chartInstance.$retireAge;
       if (age == null) return;
-      var labels = chartInstance.data.labels;
-      var idx = labels ? labels.indexOf(age) : -1;
-      if (idx === -1) return;
-      var xScale = chartInstance.scales.x;
-      var yScale = chartInstance.scales.y;
-      var xPixel = xScale.getPixelForValue(age, idx);
+      var xPixel = pixelForAge(chartInstance, age);
+      if (xPixel == null) return;
+      var area = chartInstance.chartArea;
       var chartCtx = chartInstance.ctx;
-
       chartCtx.save();
-      chartCtx.beginPath();
-      chartCtx.moveTo(xPixel, yScale.top);
-      chartCtx.lineTo(xPixel, yScale.bottom);
-      chartCtx.lineWidth = 1.5;
-      chartCtx.strokeStyle = cssVar("--text-muted");
-      chartCtx.setLineDash([3, 3]);
-      chartCtx.stroke();
+      chartCtx.fillStyle = "rgba(156, 148, 47, 0.08)";
+      chartCtx.fillRect(xPixel, area.top, area.right - xPixel, area.bottom - area.top);
       chartCtx.restore();
+    },
+    afterDraw: function (chartInstance) {
+      var retireAge = chartInstance.$retireAge;
+      if (retireAge != null) {
+        var retireX = pixelForAge(chartInstance, retireAge);
+        if (retireX != null) {
+          drawDashedMarker(chartInstance, retireX, cssVar("--wine-600"));
+          drawMarkerLabel(chartInstance, retireX, ["Retirement begins"], 4);
+        }
+      }
 
-      chartCtx.save();
-      chartCtx.fillStyle = cssVar("--text-body");
-      chartCtx.font = "11px 'Spline Sans Mono', monospace";
-      chartCtx.textAlign = "center";
-      chartCtx.textBaseline = "top";
-      chartCtx.fillText("SS starts", xPixel, yScale.top + 4);
-      chartCtx.restore();
+      var ssAge = chartInstance.$ssClaimAge;
+      if (ssAge != null) {
+        var ssX = pixelForAge(chartInstance, ssAge);
+        if (ssX != null) {
+          drawDashedMarker(chartInstance, ssX, cssVar("--text-muted"));
+          drawMarkerLabel(chartInstance, ssX, chartInstance.$ssLabelLines || ["SS starts"], 20);
+        }
+      }
     }
   };
 
   var chart = new Chart(ctx, {
     type: "line",
-    plugins: [ssMarkerPlugin],
+    plugins: [phaseAnnotationsPlugin],
     data: {
       labels: [],
       datasets: [
@@ -1816,6 +1909,9 @@
     function targetForAge(age) {
       return (ssBenefit > 0 && age >= ssAge) ? reducedWorkOptionalNumber : workOptionalNumber;
     }
+    function withdrawalNeedForAge(age) {
+      return (ssBenefit > 0 && age >= ssAge) ? reducedExpenses : targetExpenses;
+    }
 
     ssLegendItemEl.style.display = ssBenefit > 0 ? "inline-flex" : "none";
     ssLegendTextEl.textContent = "Social Security starts (age " + ssAge + ")";
@@ -1823,8 +1919,9 @@
     updateExpensesPreview();
     renderSavingsTable(returnRate, withdrawalRate);
 
-    // project year by year
+    // project year by year: accumulate until work-optional, then draw down through a reasonable end age
     var MAX_YEARS = 70;
+    var END_AGE = 95;
     var balances = [totalInvested];
     var ages = [currentAge];
     var crossingYear = -1;
@@ -1835,21 +1932,34 @@
     }
 
     var balance = totalInvested;
+    var depletionAge = null;
     for (var y = 1; y <= MAX_YEARS; y++) {
-      balance = balance * (1 + returnRate) + annualInvest;
       var ageThisYear = currentAge + y;
-      balances.push(balance);
-      ages.push(ageThisYear);
       if (crossingYear === -1) {
+        balance = balance * (1 + returnRate) + annualInvest;
+        balances.push(balance);
+        ages.push(ageThisYear);
         var targetThisYear = targetForAge(ageThisYear);
         if (balance >= targetThisYear) {
           crossingYear = y;
           crossingTarget = targetThisYear;
         }
+      } else {
+        if (ageThisYear > END_AGE) break;
+        balance = balance * (1 + returnRate) - withdrawalNeedForAge(ageThisYear);
+        if (balance < 0) balance = 0;
+        balances.push(balance);
+        ages.push(ageThisYear);
+        if (balance <= 0 && depletionAge === null) depletionAge = ageThisYear;
       }
     }
 
     var taxEstimate = updateTaxEstimate(income);
+    var workOptionalAge = crossingYear >= 0 ? currentAge + crossingYear : null;
+    var endAge = ages[ages.length - 1];
+    var finalBalance = balances[balances.length - 1];
+    var hasRetirementPhase = workOptionalAge !== null && workOptionalAge < endAge;
+    var moneyLasts = hasRetirementPhase && depletionAge === null;
 
     lastResult = {
       currentAge: currentAge, income: income, totalInvested: totalInvested,
@@ -1859,7 +1969,12 @@
       ssAge: ssAge, ssBenefit: ssBenefit,
       crossingYear: crossingYear,
       crossingTarget: crossingTarget,
-      workOptionalAge: crossingYear >= 0 ? currentAge + crossingYear : null,
+      workOptionalAge: workOptionalAge,
+      endAge: endAge,
+      finalBalance: finalBalance,
+      hasRetirementPhase: hasRetirementPhase,
+      moneyLasts: moneyLasts,
+      depletionAge: depletionAge,
       city: cityInput.value.trim(),
       stateAbbr: taxEstimate.stateAbbr,
       estFederalTax: taxEstimate.fedTax,
@@ -1867,7 +1982,8 @@
     };
 
     renderResult();
-    renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit);
+    renderLongevity();
+    renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit, workOptionalAge);
   }
 
   function renderResult() {
@@ -1890,19 +2006,38 @@
     wineLineEl.textContent = wineLineFor(r.crossingYear);
   }
 
-  function renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit) {
-    var endIndex = ages.length - 1;
-    if (crossingYear >= 0) {
-      endIndex = Math.min(ages.length - 1, crossingYear + Math.max(5, Math.round(crossingYear * 0.2)));
+  function renderLongevity() {
+    var r = lastResult;
+    if (!r.hasRetirementPhase) {
+      longevityCalloutEl.style.display = "none";
+      longevityDisclaimerEl.style.display = "none";
+      retireLegendItemEl.style.display = "none";
+      return;
     }
-    if (ssBenefit > 0) {
-      var ssIdx = ages.indexOf(ssAge);
-      if (ssIdx >= 0) {
-        endIndex = Math.max(endIndex, Math.min(ages.length - 1, ssIdx + 3));
-      }
+
+    retireLegendItemEl.style.display = "inline-flex";
+    retireLegendTextEl.textContent = "Retirement begins (age " + r.workOptionalAge + ")";
+
+    longevityCalloutEl.style.display = "block";
+    longevityDisclaimerEl.style.display = "block";
+    var retirementYears = r.endAge - r.workOptionalAge;
+
+    if (r.moneyLasts) {
+      longevityCalloutEl.classList.remove("caution");
+      longevityHeadlineEl.textContent = "Your money is projected to last.";
+      longevitySubEl.textContent = "At these assumptions, your portfolio is still projected to be worth " +
+        fmtMoney(r.finalBalance) + " at age " + r.endAge + " — " + retirementYears + " years into retirement.";
+    } else {
+      longevityCalloutEl.classList.add("caution");
+      longevityHeadlineEl.textContent = "Your portfolio may not stretch the whole way.";
+      longevitySubEl.textContent = "At these assumptions, your portfolio is projected to run out around age " +
+        r.depletionAge + ". A lower withdrawal rate, reduced expenses, or working a bit longer could help.";
     }
-    var labels = ages.slice(0, endIndex + 1);
-    var data = balances.slice(0, endIndex + 1);
+  }
+
+  function renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit, workOptionalAge) {
+    var labels = ages;
+    var data = balances;
     var targetLine = labels.map(function (age, i) {
       if (crossingYear >= 0 && i > crossingYear) return null;
       return targetForAge(age);
@@ -1911,7 +2046,16 @@
     chart.data.labels = labels;
     chart.data.datasets[0].data = data;
     chart.data.datasets[1].data = targetLine;
-    chart.$ssClaimAge = (ssBenefit > 0 && labels.indexOf(ssAge) !== -1) ? ssAge : null;
+
+    chart.$retireAge = (crossingYear >= 0 && workOptionalAge != null && labels.indexOf(workOptionalAge) !== -1)
+      ? workOptionalAge : null;
+
+    var ssVisible = ssBenefit > 0 && labels.indexOf(ssAge) !== -1;
+    chart.$ssClaimAge = ssVisible ? ssAge : null;
+    chart.$ssLabelLines = (ssVisible && workOptionalAge != null && ssAge >= workOptionalAge)
+      ? ["Social Security reduces", "what you need to withdraw"]
+      : ["SS starts"];
+
     chart.update();
   }
 
