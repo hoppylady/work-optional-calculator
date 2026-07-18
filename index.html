@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Optional Calculator — Pourtfolios</title>
+<link rel="icon" type="image/png" href="assets/logo-mark-transparent.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  /* Pourtfolios design system tokens (see design project 730a22d7-f5de-467f-a98e-0f62c87d2e8d) */
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;0,6..96,600;0,6..96,700;0,6..96,800;1,6..96,400;1,6..96,500&family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Spline+Sans+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    color-scheme: light;
+
+    /* wine */
+    --wine-950: #210809;
+    --wine-900: #37110f;
+    --wine-800: #491412;
+    --wine-700: #74201f;
+    --wine-600: #8b2635;
+    --wine-500: #a5394a;
+    --wine-400: #c25a64;
+    --wine-300: #d98e8c;
+
+    /* parchment / warm neutrals */
+    --cream-50:  #f3ecdb;
+    --cream-100: #e2d9c3;
+    --sand-200:  #d3c6ab;
+    --sand-300:  #bfb090;
+    --taupe-400: #9c8d72;
+
+    /* ink */
+    --ink-900: #241011;
+    --ink-800: #3a1a1a;
+    --ink-500: #6f5a55;
+
+    /* citrine — the signature accent, used sparingly */
+    --citrine-600: #9c942f;
+    --citrine-500: #c1b84c;
+    --citrine-400: #d0cb63;
+
+    /* functional */
+    --positive: #5a7d4f;
+    --negative: #a5394a;
+    --caution:  #b9852f;
+
+    /* semantic aliases */
+    --surface-page:   #ece3ce;
+    --surface-card:   #f5eeda;
+    --surface-raised: #f1e8d3;
+    --text-strong: var(--ink-900);
+    --text-body:   var(--ink-800);
+    --text-muted:  var(--ink-500);
+    --brand:       var(--wine-600);
+    --brand-hover: var(--wine-700);
+    --wine-wash:   rgba(139, 38, 53, 0.10);
+    --line:            rgba(36, 16, 17, 0.14);
+    --line-strong:     rgba(36, 16, 17, 0.28);
+    --line-on-wine:        rgba(237, 233, 220, 0.22);
+    --line-on-wine-strong: rgba(237, 233, 220, 0.42);
+    --text-on-wine:        #e2d9c3;
+    --text-on-wine-muted:  rgba(237, 233, 220, 0.66);
+    --focus-ring: var(--citrine-500);
+
+    /* type */
+    --font-wordmark: 'Bricolage Grotesque', 'Arial Black', sans-serif;
+    --font-display:  'Bodoni Moda', 'Didot', 'Times New Roman', serif;
+    --font-body:     'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+    --font-mono:     'Spline Sans Mono', ui-monospace, 'SFMono-Regular', monospace;
+    --tracking-eyebrow: 0.22em;
+
+    /* spacing & radii */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 28px;
+    --radius-pill: 999px;
+
+    /* shadows & motion */
+    --shadow-xs: 0 1px 2px rgba(42, 12, 11, 0.06);
+    --shadow-sm: 0 2px 8px rgba(42, 12, 11, 0.08);
+    --shadow-md: 0 8px 24px rgba(42, 12, 11, 0.10);
+    --shadow-lg: 0 18px 48px rgba(42, 12, 11, 0.14);
+    --shadow-on-wine: 0 16px 40px rgba(0, 0, 0, 0.36);
+    --dur-fast: 140ms;
+    --dur-normal: 240ms;
+    --ease-standard: cubic-bezier(0.4, 0.0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--surface-page);
+    color: var(--text-strong);
+    font-family: var(--font-body);
+  }
+  body { -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 0 0 0.5em;
+  }
+  ::selection { background: var(--citrine-500); color: var(--ink-900); }
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  .wine-hero {
+    background: var(--wine-900);
+    padding: 40px 20px 48px;
+  }
+  .wine-hero-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .brand-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .brand-lockup img {
+    width: 30px;
+    height: auto;
+  }
+  .brand-lockup span {
+    font-family: var(--font-wordmark);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--cream-100);
+  }
+
+  header.hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+    color: var(--cream-100);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  header.hero p {
+    color: var(--text-on-wine-muted);
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .intro-explainer {
+    margin: 24px 0 0;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-on-wine-muted);
+  }
+  .intro-explainer strong { color: var(--citrine-400); font-weight: 600; }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .inputs-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+  .inputs-col > .card {
+    margin-top: 0;
+  }
+  .result-col {
+    width: 100%;
+  }
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 24px;
+  }
+
+  .card + .card { margin-top: 20px; }
+
+  .full-width-card {
+    margin-top: 24px;
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .section-sub {
+    font-size: 14px;
+    color: var(--text-body);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .field { margin-bottom: 20px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label.field-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .input-shell {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-shell .prefix {
+    position: absolute;
+    left: 14px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    pointer-events: none;
+  }
+  input[type="text"], input[type="number"], input[type="email"] {
+    width: 100%;
+    font-family: var(--font-body);
+    font-size: 15px;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line-strong);
+    background: var(--surface-card);
+    color: var(--text-strong);
+  }
+  input.with-prefix { padding-left: 28px; }
+  input:focus {
+    outline: none;
+    border-color: var(--wine-600);
+    box-shadow: 0 0 0 3px rgba(193, 184, 76, 0.35);
+  }
+  input[readonly] {
+    color: var(--text-body);
+    background: var(--surface-raised);
+  }
+  input:disabled {
+    color: var(--text-muted);
+    background: var(--surface-raised);
+    opacity: 0.7;
+  }
+
+  .toggle-link {
+    background: none;
+    border: none;
+    color: var(--wine-600);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-top: 6px;
+  }
+  .toggle-link:hover { color: var(--brand-hover); text-decoration: underline; }
+
+  .breakdown {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+    display: none;
+  }
+  .breakdown.open { display: block; }
+  .breakdown label.field-label {
+    margin-bottom: 2px;
+  }
+
+  .segmented {
+    display: inline-flex;
+    border: 1.5px solid var(--line-strong);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .segmented button {
+    border: none;
+    background: var(--surface-card);
+    color: var(--text-body);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard);
+  }
+  .segmented button.active {
+    background: var(--wine-600);
+    color: var(--cream-100);
+  }
+  .segmented button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .segmented.small button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .invest-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .invest-row .input-shell { flex: 1; }
+
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    accent-color: var(--wine-600);
+    cursor: pointer;
+  }
+  .checkbox-row:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .checkbox-row input:disabled { cursor: not-allowed; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--wine-600);
+  }
+  .slider-number-shell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .slider-number {
+    width: 62px !important;
+    text-align: right;
+    padding: 6px 8px !important;
+    font-family: var(--font-mono) !important;
+    font-size: 14px !important;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .slider-unit {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-body);
+  }
+  .slider-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .label-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .label-row label.field-label { margin-bottom: 0; }
+
+  .info-tip {
+    position: relative;
+    display: inline-flex;
+  }
+  .info-tip button {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--text-muted);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: inherit;
+  }
+  .info-tip .bubble {
+    display: none;
+    position: absolute;
+    z-index: 5;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    background: var(--ink-900);
+    color: var(--cream-100);
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+  }
+  .info-tip.open .bubble { display: block; }
+  .info-tip.align-left .bubble {
+    left: 0;
+    transform: none;
+  }
+
+  .three-fund {
+    margin-top: 14px;
+    background: var(--surface-raised);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--text-body);
+    line-height: 1.5;
+  }
+  .three-fund strong { color: var(--text-strong); }
+  .three-fund ul { margin: 8px 0 0; padding-left: 18px; }
+  .three-fund li { margin-bottom: 4px; }
+  .three-fund p { margin: 10px 0 0; }
+  .three-fund a { color: var(--wine-600); font-weight: 600; text-decoration: none; }
+  .three-fund a:hover { text-decoration: underline; }
+
+  .tax-estimate {
+    margin-bottom: 20px;
+    background: var(--surface-raised);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+  }
+  .tax-estimate-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+  }
+  .tax-estimate-row .tax-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+  .tax-estimate-row .tax-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text-strong);
+  }
+  .tax-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin: 8px 0 0;
+    line-height: 1.4;
+  }
+
+  /* Result card */
+  .result-card {
+    background: var(--surface-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    padding: 32px;
+    text-align: center;
+  }
+  .result-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-eyebrow);
+    margin: 0 0 10px;
+  }
+  .result-number {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 64px;
+    font-weight: 600;
+    color: var(--wine-600);
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  .result-sub {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-body);
+    margin: 12px 0 0;
+  }
+  .wine-line {
+    margin: 18px auto 0;
+    max-width: 480px;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--text-body);
+    background: var(--surface-raised);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+  }
+
+  .chart-wrap {
+    margin-top: 20px;
+    position: relative;
+    height: 320px;
+  }
+
+  .chart-legend-note {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--text-body);
+  }
+  .chart-legend-note span.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .chart-legend-note .swatch.line { background: var(--wine-600); }
+  .chart-legend-note .swatch.target {
+    background: none;
+    border-top: 2px dashed var(--citrine-600);
+    height: 0;
+  }
+  .chart-legend-note .swatch.ss-mark {
+    background: none;
+    border-left: 2px dashed var(--text-muted);
+    width: 0;
+    height: 12px;
+    margin-right: 8px;
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  button.primary-btn, button.ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 13px;
+    padding: 12px 24px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-standard), color var(--dur-fast) var(--ease-standard), border-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
+  }
+  button.primary-btn:active, button.ghost-btn:active { transform: scale(0.97); }
+  button.primary-btn {
+    background: var(--wine-600);
+    color: var(--cream-100);
+    border-color: var(--wine-600);
+  }
+  button.primary-btn:hover { background: var(--wine-700); border-color: var(--wine-700); }
+  button.ghost-btn {
+    background: transparent;
+    color: var(--wine-700);
+    border-color: var(--wine-600);
+  }
+  button.ghost-btn:hover { background: var(--wine-600); color: var(--cream-100); }
+  .copied-toast {
+    font-size: 12px;
+    color: var(--positive);
+    margin-top: 8px;
+    height: 16px;
+  }
+
+  .email-capture {
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+  }
+  .email-capture p {
+    font-size: 13px;
+    color: var(--text-body);
+    margin: 0 0 10px;
+  }
+  .email-row {
+    display: flex;
+    gap: 8px;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .email-row input { flex: 1; }
+  .email-confirm {
+    font-size: 12px;
+    color: var(--positive);
+    margin-top: 8px;
+    display: none;
+  }
+  .email-confirm.show { display: block; }
+
+  .disclaimer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 28px;
+  }
+
+  /* Combined invested / investing matrix */
+  .limit-note {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+  }
+  .limit-warning {
+    font-size: 12px;
+    color: var(--caution);
+    margin: 4px 0 0;
+    line-height: 1.4;
+  }
+  .hsa-coverage-toggle {
+    margin-top: 8px;
+  }
+  .invest-matrix {
+    margin-top: 4px;
+  }
+  .matrix-row {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .matrix-row:first-child {
+    padding-top: 4px;
+  }
+  .matrix-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .matrix-row .acct-name {
+    font-weight: 600;
+    font-size: 13px;
+    margin: 0;
+  }
+  .matrix-row .acct-sub {
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 3px 0 0;
+    line-height: 1.4;
+  }
+  .matrix-row-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .matrix-field label.mini-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 5px;
+  }
+  .matrix-sum-row .mini-label {
+    text-transform: none;
+    font-size: 12px;
+  }
+  .matrix-sum-row strong {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    color: var(--text-strong);
+  }
+
+  /* Savings-rate table */
+  .savings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+  .savings-table th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .savings-table td {
+    padding: 12px 12px 12px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--text-strong);
+    vertical-align: middle;
+  }
+  .savings-table tr:last-child td {
+    border-bottom: none;
+  }
+  .savings-table td.sr-rate {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .savings-table td.sr-years {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--text-body);
+  }
+  .sr-bar-track {
+    background: var(--wine-wash);
+    border-radius: 4px;
+    height: 8px;
+    width: 100%;
+    min-width: 80px;
+    max-width: 220px;
+    overflow: hidden;
+  }
+  .sr-bar-fill {
+    background: var(--wine-600);
+    height: 100%;
+    border-radius: 4px;
+  }
+
+  .settings-inline {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .settings-inline .field { flex: 1; min-width: 140px; }
+</style>
+</head>
+<body>
+<div class="wine-hero">
+  <div class="wine-hero-inner">
+    <div class="brand-lockup">
+      <img src="assets/logo-mark-cream.png" alt="">
+      <span>Pourtfolios</span>
+    </div>
+    <header class="hero">
+      <h1>Work Optional Calculator</h1>
+      <p>Find the age you can call work optional — based on your savings, contributions, and a few reasonable assumptions.</p>
+    </header>
+
+    <p class="intro-explainer">
+      Imagine a machine that quietly pays your bills every year, forever, whether or not you show up to a job. That's <strong>"work optional"</strong> — the point where your investments alone can cover your life, so a paycheck becomes a choice instead of a requirement. It doesn't mean you'll never work again: plenty of people who reach this point keep working, just on their own terms — fewer hours, a passion project, or nothing at all. Think of it less as a finish line and more as buying yourself a permission slip to choose.
+    </p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="card full-width-card">
+    <p class="section-title">Why savings rate matters more than income</p>
+    <p class="section-sub">
+      Here's the part that surprises most people: it's not your paycheck that decides how fast you get here — it's what share of it you save. Income is just the faucet; if spending rises right along with it, the tub never fills. Save 10% of anything and you're in for a multi-decade grind. Save half, and you can cut that timeline by more than two-thirds — using the same <span id="srReturnRef">7</span>% growth and <span id="srWithdrawalRef">4</span>% withdrawal assumptions you can fine-tune below. Same math, any income level, starting from $0.
+    </p>
+    <table class="savings-table">
+      <thead>
+        <tr><th>Savings rate</th><th>Years to work optional</th><th></th></tr>
+      </thead>
+      <tbody id="savingsTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT: Inputs -->
+    <div class="inputs-col">
+
+      <div class="card">
+        <div class="field">
+          <label class="field-label" for="currentAge">Current age</label>
+          <div class="input-shell">
+            <input type="number" id="currentAge" value="30" min="18" max="80" step="1">
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label class="field-label" for="cityInput" style="margin-bottom:0;">City</label>
+            <div class="info-tip align-left" id="cityInfoTip">
+              <button type="button" aria-label="More info">i</button>
+              <div class="bubble">We use this to estimate your state income tax below. Include a state abbreviation for accuracy, e.g. "Austin, TX" — otherwise we'll only estimate federal tax.</div>
+            </div>
+          </div>
+          <div class="input-shell">
+            <input type="text" id="cityInput" placeholder="e.g. Austin, TX">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="annualIncome">Annual income</label>
+          <div class="input-shell">
+            <span class="prefix">$</span>
+            <input type="text" inputmode="numeric" id="annualIncome" class="with-prefix" value="90,000">
+          </div>
+        </div>
+
+        <div class="tax-estimate" id="taxEstimate">
+          <div class="tax-estimate-row">
+            <span class="tax-label">Est. federal tax</span>
+            <span class="tax-value" id="fedTaxValue">$0</span>
+          </div>
+          <div class="tax-estimate-row">
+            <span class="tax-label" id="stateTaxLabel">Est. state tax</span>
+            <span class="tax-value" id="stateTaxValue">—</span>
+          </div>
+          <p class="tax-note" id="taxNote">Rough single-filer estimate using approximate 2026 federal brackets — not tax advice.</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="totalInvested">Total amount invested</label>
+          <div class="input-shell">
+            <span class="prefix">$</span>
+            <input type="text" inputmode="numeric" id="totalInvested" class="with-prefix" value="40,000">
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label">Annual investing amount</label>
+          <div class="invest-row">
+            <div class="input-shell">
+              <span class="prefix" id="investPrefix">$</span>
+              <input type="text" inputmode="numeric" id="investAmount" class="with-prefix" value="5,000">
+            </div>
+            <div class="segmented" id="investModeToggle">
+              <button type="button" data-mode="dollar" class="active">$</button>
+              <button type="button" data-mode="percent">%</button>
+            </div>
+          </div>
+          <label class="checkbox-row" for="investMaxCheckbox">
+            <input type="checkbox" id="investMaxCheckbox">
+            <span>Max out contributions (<span id="investMaxAmount">$0</span>/year across 401(k), IRA &amp; HSA)</span>
+          </label>
+        </div>
+
+        <button class="toggle-link" id="breakdownToggle" type="button" style="margin-top:14px;">Break this down by account &rarr;</button>
+
+        <div class="breakdown" id="breakdownSection">
+          <div class="invest-matrix">
+
+            <div class="matrix-row">
+              <p class="acct-name">Traditional IRA</p>
+              <p class="acct-sub">Contributions may reduce taxes now; withdrawals taxed later.</p>
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Current balance</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matTraditionalIRABalance" class="with-prefix" value="0">
+                  </div>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Annual contribution</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matTraditionalIRAContribution" class="with-prefix" value="0">
+                  </div>
+                  <p class="limit-note" id="limitNoteIRA">2026 limit: $7,500 combined (Traditional + Roth)</p>
+                  <p class="limit-warning" id="limitWarningIRA"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-row">
+              <p class="acct-name">Roth IRA</p>
+              <p class="acct-sub">Contributions taxed now; withdrawals tax-free later.</p>
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Current balance</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matRothIRABalance" class="with-prefix" value="0">
+                  </div>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Annual contribution</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matRothIRAContribution" class="with-prefix" value="0">
+                  </div>
+                  <p class="limit-warning" id="limitWarningIRARoth"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-row">
+              <p class="acct-name">401(k) / 403(b)</p>
+              <p class="acct-sub">Employer-sponsored plan — traditional and/or Roth, often with a company match.</p>
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Current balance</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="mat401kBalance" class="with-prefix" value="0">
+                  </div>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Annual contribution</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="mat401kContribution" class="with-prefix" value="0">
+                  </div>
+                  <p class="limit-note" id="limitNote401k">2026 limit: $24,500</p>
+                  <p class="limit-warning" id="limitWarning401k"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-row">
+              <p class="acct-name">HSA</p>
+              <p class="acct-sub">Triple tax advantage — deductible contributions, tax-free growth and withdrawals for medical expenses.</p>
+              <div class="segmented small hsa-coverage-toggle" id="hsaCoverageToggle">
+                <button type="button" data-coverage="self" class="active">Self-only</button>
+                <button type="button" data-coverage="family">Family</button>
+              </div>
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Current balance</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matHSABalance" class="with-prefix" value="0">
+                  </div>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Annual contribution</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matHSAContribution" class="with-prefix" value="0">
+                  </div>
+                  <p class="limit-note" id="limitNoteHSA">2026 limit: $4,400 (self-only)</p>
+                  <p class="limit-warning" id="limitWarningHSA"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-row">
+              <p class="acct-name">Taxable brokerage</p>
+              <p class="acct-sub">After-tax dollars — no special tax treatment, but flexible with no withdrawal rules.</p>
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Current balance</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matTaxableBalance" class="with-prefix" value="0">
+                  </div>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Annual contribution</label>
+                  <div class="input-shell">
+                    <span class="prefix">$</span>
+                    <input type="text" inputmode="numeric" id="matTaxableContribution" class="with-prefix" value="0">
+                  </div>
+                  <p class="limit-note">No annual limit</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="matrix-row matrix-sum-row">
+              <div class="matrix-row-fields">
+                <div class="matrix-field">
+                  <label class="mini-label">Sum of accounts (balance)</label>
+                  <strong id="breakdownSumDisplay">$0</strong>
+                </div>
+                <div class="matrix-field">
+                  <label class="mini-label">Sum of accounts (contribution)</label>
+                  <strong id="investBreakdownSumDisplay">$0</strong>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label class="field-label" for="expensesSlider">Target retirement expenses</label>
+          <div class="slider-row">
+            <input type="range" id="expensesSlider" min="10" max="100" step="1" value="75">
+            <div class="slider-number-shell">
+              <input type="number" id="expensesNumber" class="slider-number" min="10" max="100" step="1" value="75">
+              <span class="slider-unit">%</span>
+            </div>
+          </div>
+          <p class="slider-sub">Percent of current income you'll want to cover annually in retirement — <span id="expensesDollarPreview">$67,500</span>/year.</p>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label class="field-label" for="returnRate" style="margin-bottom:0;">Expected annual return</label>
+            <div class="info-tip" id="returnInfoTip">
+              <button type="button" aria-label="More info">i</button>
+              <div class="bubble">Historically, a diversified stock portfolio has returned about 10%/year before inflation (~7% after inflation) over the last century.</div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="returnRate" min="2" max="12" step="0.5" value="7">
+            <div class="slider-number-shell">
+              <input type="number" id="returnRateNumber" class="slider-number" min="2" max="12" step="0.5" value="7">
+              <span class="slider-unit">%</span>
+            </div>
+          </div>
+
+          <div class="three-fund">
+            <strong>The three-fund portfolio</strong> — this is the kind of portfolio the return assumption above is based on: a simple, low-cost mix of index funds.
+            <ul>
+              <li>Total US stock market</li>
+              <li>Total international stock market</li>
+              <li>Total bonds</li>
+            </ul>
+            <p>Want to go deeper? Read more at <a href="https://www.bogleheads.org/" target="_blank" rel="noopener">bogleheads.org</a>, the community and wiki this concept comes from.</p>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label" for="withdrawalRate">Withdrawal rate (the "4% rule")</label>
+          <div class="slider-row">
+            <input type="range" id="withdrawalRate" min="2.5" max="6" step="0.25" value="4">
+            <div class="slider-number-shell">
+              <input type="number" id="withdrawalRateNumber" class="slider-number" min="2.5" max="6" step="0.25" value="4">
+              <span class="slider-unit">%</span>
+            </div>
+          </div>
+          <p class="slider-sub">Sets your target number: yearly expenses &divide; withdrawal rate.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label class="field-label" for="ssAgeNumber">Age you'll start collecting</label>
+          <div class="slider-row">
+            <input type="range" id="ssAgeSlider" min="62" max="70" step="1" value="62">
+            <div class="slider-number-shell">
+              <input type="number" id="ssAgeNumber" class="slider-number" min="62" max="70" step="1" value="62">
+            </div>
+          </div>
+          <p class="slider-sub">62 is the earliest age you can claim — waiting longer (up to 70) increases the monthly benefit. We fold it into your timeline once you hit this age.</p>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label class="field-label" for="ssBenefit">Estimated annual benefit</label>
+          <div class="input-shell">
+            <span class="prefix">$</span>
+            <input type="text" inputmode="numeric" id="ssBenefit" class="with-prefix" value="24,000">
+          </div>
+          <p class="slider-sub">A rough placeholder — get your real number from your <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener">ssa.gov account</a>. Set to $0 to leave Social Security out of the math entirely.</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Result -->
+    <div class="result-col">
+      <div class="result-card">
+        <p class="result-eyebrow" id="resultEyebrow">You'll be work optional at</p>
+        <p class="result-number" id="resultAge">Age 52</p>
+        <p class="result-sub" id="resultSub">That's 22 years from now — your portfolio is projected to reach $2,250,000.</p>
+
+        <p class="wine-line" id="wineLine">Your portfolio's aging like a fine Cab — 22 more years to reach its peak.</p>
+
+        <div class="chart-wrap">
+          <canvas id="growthChart"></canvas>
+        </div>
+        <div class="chart-legend-note">
+          <span><span class="swatch line"></span>Projected portfolio value</span>
+          <span><span class="swatch target"></span>Work optional number</span>
+          <span id="ssLegendItem" style="display:none;"><span class="swatch ss-mark"></span><span id="ssLegendText">Social Security starts</span></span>
+        </div>
+
+        <div class="actions-row">
+          <button class="primary-btn" id="shareBtn" type="button">Share your result</button>
+        </div>
+        <p class="copied-toast" id="copiedToast"></p>
+
+        <div class="email-capture">
+          <p>Enter your email to get this sent to you + get notified when we add new tools.</p>
+          <div class="email-row">
+            <input type="email" id="emailInput" placeholder="you@example.com">
+            <button class="ghost-btn" id="emailSubmitBtn" type="button">Send</button>
+          </div>
+          <p class="email-confirm" id="emailConfirm">Got it — check your inbox soon.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="disclaimer">This is an educational tool, not financial advice.</p>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- helpers ----------
+  function parseNum(str) {
+    if (typeof str !== "string") return Number(str) || 0;
+    var cleaned = str.replace(/[^0-9.\-]/g, "");
+    var n = parseFloat(cleaned);
+    return isNaN(n) ? 0 : n;
+  }
+  function fmtInt(n) {
+    return Math.round(n).toLocaleString("en-US");
+  }
+  function fmtMoney(n) {
+    return "$" + fmtInt(n);
+  }
+  function fmtMoneyCompact(n) {
+    if (Math.abs(n) >= 1000000) return "$" + (n / 1000000).toFixed(2).replace(/\.00$/, "") + "M";
+    if (Math.abs(n) >= 1000) return "$" + (n / 1000).toFixed(0) + "K";
+    return fmtMoney(n);
+  }
+
+  // live thousands-separator formatting, preserving cursor position
+  function formatWithCommas(digits) {
+    if (!digits) return "";
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function liveFormatMoneyInput(el) {
+    el.addEventListener("input", function () {
+      var cursorPos = el.selectionStart;
+      var oldValue = el.value;
+      var digitsBeforeCursor = oldValue.slice(0, cursorPos).replace(/[^0-9]/g, "").length;
+      var rawDigits = oldValue.replace(/[^0-9]/g, "");
+      var formatted = formatWithCommas(rawDigits);
+      el.value = formatted;
+      var newPos = 0, digitCount = 0;
+      while (newPos < formatted.length && digitCount < digitsBeforeCursor) {
+        if (/[0-9]/.test(formatted[newPos])) digitCount++;
+        newPos++;
+      }
+      try { el.setSelectionRange(newPos, newPos); } catch (e) {}
+    });
+  }
+
+  // paired slider <-> number input, kept in sync
+  function bindSliderPair(sliderEl, numberEl, onChange) {
+    var min = parseFloat(sliderEl.min), max = parseFloat(sliderEl.max);
+    sliderEl.addEventListener("input", function () {
+      numberEl.value = sliderEl.value;
+      onChange();
+    });
+    numberEl.addEventListener("input", function () {
+      var v = parseFloat(numberEl.value);
+      if (!isNaN(v)) {
+        sliderEl.value = Math.min(max, Math.max(min, v));
+      }
+      onChange();
+    });
+    numberEl.addEventListener("blur", function () {
+      var v = parseFloat(numberEl.value);
+      if (isNaN(v)) v = parseFloat(sliderEl.value);
+      v = Math.min(max, Math.max(min, v));
+      numberEl.value = v;
+      sliderEl.value = v;
+      onChange();
+    });
+  }
+
+  // ---------- element refs ----------
+  var currentAgeEl = document.getElementById("currentAge");
+  var cityInput = document.getElementById("cityInput");
+  var cityInfoTip = document.getElementById("cityInfoTip");
+  var fedTaxValueEl = document.getElementById("fedTaxValue");
+  var stateTaxLabelEl = document.getElementById("stateTaxLabel");
+  var stateTaxValueEl = document.getElementById("stateTaxValue");
+  var taxNoteEl = document.getElementById("taxNote");
+  var annualIncomeEl = document.getElementById("annualIncome");
+  var totalInvestedEl = document.getElementById("totalInvested");
+
+  var breakdownToggle = document.getElementById("breakdownToggle");
+  var breakdownSection = document.getElementById("breakdownSection");
+  var breakdownSumDisplay = document.getElementById("breakdownSumDisplay");
+  var investBreakdownSumDisplay = document.getElementById("investBreakdownSumDisplay");
+
+  var investAmountEl = document.getElementById("investAmount");
+  var investPrefixEl = document.getElementById("investPrefix");
+  var investModeToggle = document.getElementById("investModeToggle");
+  var investMaxCheckbox = document.getElementById("investMaxCheckbox");
+  var investMaxAmountEl = document.getElementById("investMaxAmount");
+
+  var matBalance = {
+    traditionalIRA: document.getElementById("matTraditionalIRABalance"),
+    rothIRA: document.getElementById("matRothIRABalance"),
+    k401: document.getElementById("mat401kBalance"),
+    hsa: document.getElementById("matHSABalance"),
+    taxable: document.getElementById("matTaxableBalance")
+  };
+  var matContribution = {
+    traditionalIRA: document.getElementById("matTraditionalIRAContribution"),
+    rothIRA: document.getElementById("matRothIRAContribution"),
+    k401: document.getElementById("mat401kContribution"),
+    hsa: document.getElementById("matHSAContribution"),
+    taxable: document.getElementById("matTaxableContribution")
+  };
+
+  var limitNote401kEl = document.getElementById("limitNote401k");
+  var limitWarning401kEl = document.getElementById("limitWarning401k");
+  var limitNoteIRAEl = document.getElementById("limitNoteIRA");
+  var limitWarningIRAEl = document.getElementById("limitWarningIRA");
+  var limitWarningIRARothEl = document.getElementById("limitWarningIRARoth");
+  var hsaCoverageToggleEl = document.getElementById("hsaCoverageToggle");
+  var limitNoteHSAEl = document.getElementById("limitNoteHSA");
+  var limitWarningHSAEl = document.getElementById("limitWarningHSA");
+
+  var expensesSlider = document.getElementById("expensesSlider");
+  var expensesNumber = document.getElementById("expensesNumber");
+  var expensesDollarPreview = document.getElementById("expensesDollarPreview");
+
+  var returnRateEl = document.getElementById("returnRate");
+  var returnRateNumber = document.getElementById("returnRateNumber");
+  var returnInfoTip = document.getElementById("returnInfoTip");
+
+  var withdrawalRateEl = document.getElementById("withdrawalRate");
+  var withdrawalRateNumber = document.getElementById("withdrawalRateNumber");
+
+  var ssAgeSliderEl = document.getElementById("ssAgeSlider");
+  var ssAgeNumberEl = document.getElementById("ssAgeNumber");
+  var ssBenefitEl = document.getElementById("ssBenefit");
+  var ssLegendItemEl = document.getElementById("ssLegendItem");
+  var ssLegendTextEl = document.getElementById("ssLegendText");
+
+  var srReturnRef = document.getElementById("srReturnRef");
+  var srWithdrawalRef = document.getElementById("srWithdrawalRef");
+  var savingsTableBody = document.getElementById("savingsTableBody");
+
+  var resultEyebrowEl = document.getElementById("resultEyebrow");
+  var resultAgeEl = document.getElementById("resultAge");
+  var resultSubEl = document.getElementById("resultSub");
+  var wineLineEl = document.getElementById("wineLine");
+
+  var shareBtn = document.getElementById("shareBtn");
+  var copiedToast = document.getElementById("copiedToast");
+
+  var emailInput = document.getElementById("emailInput");
+  var emailSubmitBtn = document.getElementById("emailSubmitBtn");
+  var emailConfirm = document.getElementById("emailConfirm");
+
+  [annualIncomeEl, totalInvestedEl, investAmountEl, ssBenefitEl]
+    .concat(Object.keys(matBalance).map(function (k) { return matBalance[k]; }))
+    .concat(Object.keys(matContribution).map(function (k) { return matContribution[k]; }))
+    .forEach(liveFormatMoneyInput);
+
+  // ---------- invest amount $ / % toggle ----------
+  var investMode = "dollar"; // or "percent"
+  investModeToggle.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-mode]");
+    if (!btn || btn.disabled) return;
+    var newMode = btn.getAttribute("data-mode");
+    if (newMode === investMode) return;
+
+    var income = parseNum(annualIncomeEl.value);
+    var currentDollar;
+    if (investMode === "dollar") {
+      currentDollar = parseNum(investAmountEl.value);
+    } else {
+      currentDollar = income * (parseNum(investAmountEl.value) / 100);
+    }
+
+    investMode = newMode;
+    Array.prototype.forEach.call(investModeToggle.querySelectorAll("button"), function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+
+    if (investMode === "dollar") {
+      investPrefixEl.textContent = "$";
+      investAmountEl.classList.add("with-prefix");
+      investAmountEl.value = fmtInt(currentDollar);
+    } else {
+      investPrefixEl.textContent = "%";
+      investAmountEl.value = income > 0 ? (Math.round((currentDollar / income) * 1000) / 10) : 0;
+      investMaxCheckbox.checked = false;
+    }
+    recalc();
+  });
+  investAmountEl.addEventListener("input", function () {
+    investMaxCheckbox.checked = false;
+    recalc();
+  });
+  investAmountEl.addEventListener("blur", function () {
+    if (investMode === "dollar") {
+      investAmountEl.value = fmtInt(parseNum(investAmountEl.value));
+    }
+  });
+
+  function getSimpleInvestDollars() {
+    var income = parseNum(annualIncomeEl.value);
+    if (investMode === "dollar") return parseNum(investAmountEl.value);
+    return income * (parseNum(investAmountEl.value) / 100);
+  }
+
+  function getCombinedMaxAnnualInvest() {
+    return currentLimits.k401 + currentLimits.ira + currentLimits.hsa;
+  }
+
+  investMaxCheckbox.addEventListener("change", function () {
+    if (!investMaxCheckbox.checked) return;
+    if (investMode !== "dollar") {
+      investMode = "dollar";
+      investPrefixEl.textContent = "$";
+      investAmountEl.classList.add("with-prefix");
+      Array.prototype.forEach.call(investModeToggle.querySelectorAll("button"), function (b) {
+        b.classList.toggle("active", b.getAttribute("data-mode") === "dollar");
+      });
+    }
+    investAmountEl.value = fmtInt(getCombinedMaxAnnualInvest());
+    recalc();
+  });
+
+  // ---------- combined invested / investing matrix ----------
+  var breakdownOpen = false;
+  var hsaCoverage = "self"; // or "family"
+  var currentLimits = { k401: 24500, ira: 7500, hsa: 4400 };
+
+  function get401kLimit(age) { return age >= 50 ? 32500 : 24500; }
+  function getIRALimit(age) { return age >= 50 ? 8600 : 7500; }
+  function getHSALimit(age, coverage) {
+    var base = coverage === "family" ? 8750 : 4400;
+    return age >= 55 ? base + 1000 : base;
+  }
+
+  function updateMatrixWarnings() {
+    var iraSum = parseNum(matContribution.traditionalIRA.value) + parseNum(matContribution.rothIRA.value);
+    var iraMsg = iraSum > currentLimits.ira
+      ? "Heads up — combined Traditional + Roth IRA contributions exceed the 2026 limit of " + fmtMoney(currentLimits.ira) + "."
+      : "";
+    limitWarningIRAEl.textContent = iraMsg;
+    limitWarningIRARothEl.textContent = iraMsg;
+
+    var k401Amt = parseNum(matContribution.k401.value);
+    limitWarning401kEl.textContent = k401Amt > currentLimits.k401
+      ? "Heads up — this exceeds the 2026 limit of " + fmtMoney(currentLimits.k401) + "."
+      : "";
+
+    var hsaAmt = parseNum(matContribution.hsa.value);
+    limitWarningHSAEl.textContent = hsaAmt > currentLimits.hsa
+      ? "Heads up — this exceeds the 2026 limit of " + fmtMoney(currentLimits.hsa) + "."
+      : "";
+  }
+
+  function updateMatrixLimits() {
+    var age = Math.max(0, parseNum(currentAgeEl.value));
+
+    var limit401k = get401kLimit(age);
+    limitNote401kEl.textContent = "2026 limit: " + fmtMoney(limit401k) + (age >= 50 ? " (includes 50+ catch-up)" : "");
+
+    var limitIRA = getIRALimit(age);
+    limitNoteIRAEl.textContent = "2026 limit: " + fmtMoney(limitIRA) + " combined (Traditional + Roth)" + (age >= 50 ? ", incl. 50+ catch-up" : "");
+
+    var limitHSA = getHSALimit(age, hsaCoverage);
+    limitNoteHSAEl.textContent = "2026 limit: " + fmtMoney(limitHSA) + " (" + (hsaCoverage === "family" ? "family" : "self-only") + ")" + (age >= 55 ? ", incl. 55+ catch-up" : "");
+
+    currentLimits = { k401: limit401k, ira: limitIRA, hsa: limitHSA };
+    updateMatrixWarnings();
+
+    investMaxAmountEl.textContent = fmtMoney(getCombinedMaxAnnualInvest());
+    if (investMaxCheckbox.checked) {
+      investAmountEl.value = fmtInt(getCombinedMaxAnnualInvest());
+    }
+  }
+
+  function recomputeMatrixSums() {
+    var balanceSum = Object.keys(matBalance).reduce(function (s, k) { return s + parseNum(matBalance[k].value); }, 0);
+    var contributionSum = Object.keys(matContribution).reduce(function (s, k) { return s + parseNum(matContribution[k].value); }, 0);
+    breakdownSumDisplay.textContent = fmtMoney(balanceSum);
+    investBreakdownSumDisplay.textContent = fmtMoney(contributionSum);
+    if (breakdownOpen) {
+      totalInvestedEl.value = fmtInt(balanceSum);
+      if (investMode === "dollar") {
+        investAmountEl.value = fmtInt(contributionSum);
+      } else {
+        var income = parseNum(annualIncomeEl.value);
+        investAmountEl.value = income > 0 ? (Math.round((contributionSum / income) * 1000) / 10) : 0;
+      }
+    }
+    return { balanceSum: balanceSum, contributionSum: contributionSum };
+  }
+
+  Object.keys(matBalance).forEach(function (k) {
+    matBalance[k].addEventListener("input", function () {
+      recomputeMatrixSums();
+      recalc();
+    });
+  });
+  Object.keys(matContribution).forEach(function (k) {
+    matContribution[k].addEventListener("input", function () {
+      recomputeMatrixSums();
+      updateMatrixWarnings();
+      recalc();
+    });
+  });
+
+  hsaCoverageToggleEl.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-coverage]");
+    if (!btn) return;
+    hsaCoverage = btn.getAttribute("data-coverage");
+    Array.prototype.forEach.call(hsaCoverageToggleEl.querySelectorAll("button"), function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    updateMatrixLimits();
+    recalc();
+  });
+
+  function setBreakdownOpen(open) {
+    var wasOpen = breakdownOpen;
+    breakdownOpen = open;
+    breakdownSection.classList.toggle("open", open);
+    totalInvestedEl.readOnly = open;
+    investAmountEl.readOnly = open;
+    Array.prototype.forEach.call(investModeToggle.querySelectorAll("button"), function (b) { b.disabled = open; });
+    investMaxCheckbox.disabled = open;
+    if (open) investMaxCheckbox.checked = false;
+    breakdownToggle.textContent = open ? "← Use simple totals instead" : "Break this down by account →";
+
+    if (open && !wasOpen) {
+      var balanceSum = Object.keys(matBalance).reduce(function (s, k) { return s + parseNum(matBalance[k].value); }, 0);
+      if (balanceSum === 0) {
+        matBalance.taxable.value = fmtInt(parseNum(totalInvestedEl.value));
+      }
+      var contributionSum = Object.keys(matContribution).reduce(function (s, k) { return s + parseNum(matContribution[k].value); }, 0);
+      if (contributionSum === 0) {
+        matContribution.taxable.value = fmtInt(getSimpleInvestDollars());
+      }
+      recomputeMatrixSums();
+      updateMatrixWarnings();
+    }
+    recalc();
+  }
+  breakdownToggle.addEventListener("click", function () {
+    setBreakdownOpen(!breakdownOpen);
+  });
+
+  function getAnnualInvestDollars() {
+    if (breakdownOpen) return recomputeMatrixSums().contributionSum;
+    return getSimpleInvestDollars();
+  }
+
+  // ---------- sliders (paired with number inputs) ----------
+  function updateExpensesPreview() {
+    var pct = parseFloat(expensesSlider.value);
+    var income = parseNum(annualIncomeEl.value);
+    expensesDollarPreview.textContent = fmtMoney(income * pct / 100);
+  }
+
+  bindSliderPair(expensesSlider, expensesNumber, recalc);
+  bindSliderPair(returnRateEl, returnRateNumber, recalc);
+  bindSliderPair(withdrawalRateEl, withdrawalRateNumber, recalc);
+  bindSliderPair(ssAgeSliderEl, ssAgeNumberEl, recalc);
+  ssBenefitEl.addEventListener("input", recalc);
+
+  var allInfoTips = [returnInfoTip, cityInfoTip];
+  allInfoTips.forEach(function (tip) {
+    tip.querySelector("button").addEventListener("click", function (e) {
+      e.stopPropagation();
+      var wasOpen = tip.classList.contains("open");
+      allInfoTips.forEach(function (t) { t.classList.remove("open"); });
+      tip.classList.toggle("open", !wasOpen);
+    });
+  });
+  document.addEventListener("click", function () {
+    allInfoTips.forEach(function (t) { t.classList.remove("open"); });
+  });
+
+  annualIncomeEl.addEventListener("input", function () {
+    updateExpensesPreview();
+    recalc();
+  });
+  totalInvestedEl.addEventListener("input", function () {
+    if (!breakdownOpen) recalc();
+  });
+  currentAgeEl.addEventListener("input", function () {
+    updateMatrixLimits();
+    recalc();
+  });
+  cityInput.addEventListener("input", recalc);
+
+  // ---------- wine lines (easy to edit) ----------
+  var WINE_LINES = [
+    { max: 0, text: "You're already work optional — pour yourself a celebratory glass." },
+    { max: 5, text: "Almost there — like a Beaujolais Nouveau, this one's ready fast." },
+    { max: 15, text: "Your portfolio's aging like a fine Cab — {years} more years to reach its peak." },
+    { max: 30, text: "This is a cellar-worthy vintage — give it {years} more years to come into its own." },
+    { max: Infinity, text: "A long cellar rest ahead — about {years} years until this one's ready to open." }
+  ];
+  function wineLineFor(years) {
+    var entry = WINE_LINES.find(function (w) { return years <= w.max; });
+    return entry.text.replace("{years}", Math.max(years, 0));
+  }
+
+  // ---------- chart ----------
+  var ctx = document.getElementById("growthChart").getContext("2d");
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  var ssMarkerPlugin = {
+    id: "ssMarkerPlugin",
+    afterDraw: function (chartInstance) {
+      var age = chartInstance.$ssClaimAge;
+      if (age == null) return;
+      var labels = chartInstance.data.labels;
+      var idx = labels ? labels.indexOf(age) : -1;
+      if (idx === -1) return;
+      var xScale = chartInstance.scales.x;
+      var yScale = chartInstance.scales.y;
+      var xPixel = xScale.getPixelForValue(age, idx);
+      var chartCtx = chartInstance.ctx;
+
+      chartCtx.save();
+      chartCtx.beginPath();
+      chartCtx.moveTo(xPixel, yScale.top);
+      chartCtx.lineTo(xPixel, yScale.bottom);
+      chartCtx.lineWidth = 1.5;
+      chartCtx.strokeStyle = cssVar("--text-muted");
+      chartCtx.setLineDash([3, 3]);
+      chartCtx.stroke();
+      chartCtx.restore();
+
+      chartCtx.save();
+      chartCtx.fillStyle = cssVar("--text-body");
+      chartCtx.font = "11px 'Spline Sans Mono', monospace";
+      chartCtx.textAlign = "center";
+      chartCtx.textBaseline = "top";
+      chartCtx.fillText("SS starts", xPixel, yScale.top + 4);
+      chartCtx.restore();
+    }
+  };
+
+  var chart = new Chart(ctx, {
+    type: "line",
+    plugins: [ssMarkerPlugin],
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: "Projected portfolio value",
+          data: [],
+          borderColor: cssVar("--wine-600"),
+          backgroundColor: cssVar("--wine-wash"),
+          borderWidth: 2,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: cssVar("--wine-600"),
+          pointHoverBorderColor: cssVar("--surface-card"),
+          pointHoverBorderWidth: 2
+        },
+        {
+          label: "Work optional number",
+          data: [],
+          borderColor: cssVar("--citrine-600"),
+          borderWidth: 2,
+          borderDash: [6, 5],
+          fill: false,
+          stepped: "after",
+          pointRadius: 0,
+          pointHoverRadius: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 16 } },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cssVar("--text-strong"),
+          titleColor: cssVar("--surface-card"),
+          bodyColor: cssVar("--surface-card"),
+          titleFont: { family: "'Spline Sans Mono', monospace" },
+          bodyFont: { family: "'Spline Sans Mono', monospace" },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function (items) { return "Age " + items[0].label; },
+            label: function (item) {
+              return item.dataset.label + ": " + fmtMoney(item.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Age", color: cssVar("--text-muted"), font: { family: "'Spline Sans Mono', monospace", size: 11 } },
+          grid: { display: false },
+          ticks: { color: cssVar("--text-muted"), font: { family: "'Spline Sans Mono', monospace", size: 11 } }
+        },
+        y: {
+          title: { display: false },
+          grid: { color: cssVar("--line") },
+          ticks: {
+            color: cssVar("--text-muted"),
+            font: { family: "'Spline Sans Mono', monospace", size: 11 },
+            callback: function (v) { return fmtMoneyCompact(v); }
+          }
+        }
+      }
+    }
+  });
+
+  // ---------- savings-rate-matters table ----------
+  var SAVINGS_RATES = [10, 25, 50, 75];
+  function renderSavingsTable(returnRate, withdrawalRate) {
+    srReturnRef.textContent = returnRateEl.value;
+    srWithdrawalRef.textContent = withdrawalRateEl.value;
+
+    var rows = SAVINGS_RATES.map(function (pct) {
+      var s = pct / 100;
+      var years;
+      if (returnRate <= 0) {
+        years = (1 - s) / (s * withdrawalRate);
+      } else {
+        var k = returnRate * (1 - s) / (s * withdrawalRate);
+        years = Math.log(1 + k) / Math.log(1 + returnRate);
+      }
+      return { pct: pct, years: years };
+    });
+    var maxYears = Math.max.apply(null, rows.map(function (r) { return r.years; }));
+
+    savingsTableBody.innerHTML = rows.map(function (r) {
+      var widthPct = maxYears > 0 ? (r.years / maxYears * 100) : 0;
+      return "<tr><td class=\"sr-rate\">" + r.pct + "%</td>" +
+        "<td class=\"sr-years\">~" + Math.max(0, Math.round(r.years)) + " years</td>" +
+        "<td><div class=\"sr-bar-track\"><div class=\"sr-bar-fill\" style=\"width:" + widthPct.toFixed(1) + "%\"></div></div></td></tr>";
+    }).join("");
+  }
+
+  // ---------- rough tax estimate (single filer, federal + state) ----------
+  // Approximate 2026 federal brackets (single filer), inflation-adjusted from 2025 IRS figures.
+  var FEDERAL_BRACKETS = [
+    { upTo: 12250, rate: 0.10 },
+    { upTo: 49800, rate: 0.12 },
+    { upTo: 106150, rate: 0.22 },
+    { upTo: 202625, rate: 0.24 },
+    { upTo: 257300, rate: 0.32 },
+    { upTo: 643450, rate: 0.35 },
+    { upTo: Infinity, rate: 0.37 }
+  ];
+  var FEDERAL_STANDARD_DEDUCTION = 15400;
+
+  function estimateFederalTax(income) {
+    var taxable = Math.max(0, income - FEDERAL_STANDARD_DEDUCTION);
+    var tax = 0, lower = 0;
+    for (var i = 0; i < FEDERAL_BRACKETS.length; i++) {
+      var bracket = FEDERAL_BRACKETS[i];
+      if (taxable <= lower) break;
+      var upperForBracket = Math.min(taxable, bracket.upTo);
+      tax += (upperForBracket - lower) * bracket.rate;
+      lower = bracket.upTo;
+    }
+    return tax;
+  }
+
+  // Single representative rate per state — flat rate for flat-tax states, an
+  // approximate top marginal rate for progressive states, 0 for no-income-tax
+  // states. This is a rough estimate, not a bracket-accurate calculation.
+  var STATE_TAX_RATES = {
+    AL: 0.05, AK: 0, AZ: 0.025, AR: 0.039, CA: 0.093, CO: 0.044, CT: 0.0699,
+    DE: 0.066, FL: 0, GA: 0.0539, HI: 0.0825, ID: 0.058, IL: 0.0495, IN: 0.0305,
+    IA: 0.038, KS: 0.057, KY: 0.04, LA: 0.03, ME: 0.0715, MD: 0.0575, MA: 0.05,
+    MI: 0.0425, MN: 0.0985, MS: 0.044, MO: 0.048, MT: 0.059, NE: 0.0584, NV: 0,
+    NH: 0, NJ: 0.0637, NM: 0.059, NY: 0.0685, NC: 0.0425, ND: 0.025, OH: 0.035,
+    OK: 0.0475, OR: 0.099, PA: 0.0307, RI: 0.0599, SC: 0.062, SD: 0, TN: 0,
+    TX: 0, UT: 0.0455, VT: 0.0875, VA: 0.0575, WA: 0, WV: 0.0482, WI: 0.0765,
+    WY: 0, DC: 0.0895
+  };
+  var STATE_NAME_TO_ABBR = {
+    alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+    colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+    hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+    kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+    massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
+    missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
+    "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+    "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
+    oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+    "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+    virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
+    wyoming: "WY", "district of columbia": "DC", "washington dc": "DC"
+  };
+  // Convenience lookup for common unambiguous major cities, used only when no
+  // state is typed alongside the city.
+  var CITY_TO_STATE = {
+    "new york": "NY", "new york city": "NY", nyc: "NY", brooklyn: "NY",
+    "los angeles": "CA", "san francisco": "CA", "san diego": "CA", oakland: "CA",
+    sacramento: "CA", "san jose": "CA", chicago: "IL", houston: "TX",
+    austin: "TX", "san antonio": "TX", dallas: "TX", "fort worth": "TX",
+    "el paso": "TX", phoenix: "AZ", tucson: "AZ", philadelphia: "PA",
+    pittsburgh: "PA", seattle: "WA", spokane: "WA",
+    denver: "CO", boulder: "CO", boston: "MA", cambridge: "MA",
+    nashville: "TN", memphis: "TN", atlanta: "GA", charlotte: "NC",
+    raleigh: "NC", columbus: "OH", cleveland: "OH", cincinnati: "OH",
+    indianapolis: "IN", detroit: "MI", "ann arbor": "MI",
+    minneapolis: "MN", "st paul": "MN", "st. paul": "MN", miami: "FL",
+    orlando: "FL", tampa: "FL", jacksonville: "FL", "las vegas": "NV",
+    reno: "NV", baltimore: "MD", "washington": "DC", "new orleans": "LA",
+    "kansas city": "MO", "st louis": "MO", "st. louis": "MO",
+    honolulu: "HI", anchorage: "AK", milwaukee: "WI", omaha: "NE",
+    louisville: "KY", "salt lake city": "UT", providence: "RI",
+    hartford: "CT", richmond: "VA", "virginia beach": "VA", charleston: "SC",
+    boise: "ID", albuquerque: "NM", tulsa: "OK", "oklahoma city": "OK"
+  };
+  var STATE_ABBR_SET = {};
+  Object.keys(STATE_TAX_RATES).forEach(function (abbr) { STATE_ABBR_SET[abbr] = true; });
+
+  function parseStateFromCity(input) {
+    if (!input) return null;
+    var raw = input.trim();
+    if (!raw) return null;
+
+    var parts = raw.split(",");
+    if (parts.length > 1) {
+      var afterComma = parts[parts.length - 1].trim();
+      var abbrGuess = afterComma.toUpperCase();
+      if (STATE_ABBR_SET.hasOwnProperty(abbrGuess)) return abbrGuess;
+      var nameGuess = STATE_NAME_TO_ABBR[afterComma.toLowerCase()];
+      if (nameGuess) return nameGuess;
+    }
+
+    var wholeLower = raw.toLowerCase();
+    if (STATE_NAME_TO_ABBR.hasOwnProperty(wholeLower)) return STATE_NAME_TO_ABBR[wholeLower];
+    if (STATE_ABBR_SET.hasOwnProperty(raw.toUpperCase()) && raw.length <= 2) return raw.toUpperCase();
+
+    var tokens = raw.replace(/,/g, " ").trim().split(/\s+/);
+    var lastToken = tokens[tokens.length - 1];
+    if (lastToken && STATE_ABBR_SET.hasOwnProperty(lastToken.toUpperCase()) && lastToken.length === 2) {
+      return lastToken.toUpperCase();
+    }
+
+    if (CITY_TO_STATE.hasOwnProperty(wholeLower)) return CITY_TO_STATE[wholeLower];
+    var firstTokenGuess = tokens.slice(0, -1).join(" ").toLowerCase() || wholeLower;
+    if (CITY_TO_STATE.hasOwnProperty(firstTokenGuess)) return CITY_TO_STATE[firstTokenGuess];
+
+    return null;
+  }
+
+  function updateTaxEstimate(income) {
+    var fedTax = estimateFederalTax(income);
+    fedTaxValueEl.textContent = fmtMoney(fedTax);
+
+    var stateAbbr = parseStateFromCity(cityInput.value);
+    var stateTax = null;
+    if (stateAbbr != null) {
+      var rate = STATE_TAX_RATES[stateAbbr];
+      stateTax = income * rate;
+      stateTaxLabelEl.textContent = "Est. state tax (" + stateAbbr + ")";
+      stateTaxValueEl.textContent = fmtMoney(stateTax);
+      taxNoteEl.textContent = "Rough single-filer estimate using approximate 2026 federal brackets and a single representative " + stateAbbr + " rate — not tax advice.";
+    } else {
+      stateTaxLabelEl.textContent = "Est. state tax";
+      stateTaxValueEl.textContent = "—";
+      taxNoteEl.textContent = "Add a state to your city (e.g. \"Austin, TX\") to estimate state tax too. Federal estimate uses approximate 2026 brackets — not tax advice.";
+    }
+    return { fedTax: fedTax, stateAbbr: stateAbbr, stateTax: stateTax };
+  }
+
+  // ---------- core calc ----------
+  var lastResult = null;
+
+  function recalc() {
+    var currentAge = Math.max(0, parseNum(currentAgeEl.value));
+    var income = Math.max(0, parseNum(annualIncomeEl.value));
+    var totalInvested = breakdownOpen ? recomputeMatrixSums().balanceSum : Math.max(0, parseNum(totalInvestedEl.value));
+    var annualInvest = Math.max(0, getAnnualInvestDollars());
+    var expensesPct = parseFloat(expensesSlider.value) / 100;
+    var targetExpenses = income * expensesPct;
+    var returnRate = parseFloat(returnRateEl.value) / 100;
+    var withdrawalRate = parseFloat(withdrawalRateEl.value) / 100;
+
+    var workOptionalNumber = withdrawalRate > 0 ? targetExpenses / withdrawalRate : 0;
+
+    var ssAge = Math.round(parseFloat(ssAgeSliderEl.value)) || 62;
+    var ssBenefit = Math.max(0, parseNum(ssBenefitEl.value));
+    var reducedExpenses = Math.max(0, targetExpenses - ssBenefit);
+    var reducedWorkOptionalNumber = withdrawalRate > 0 ? reducedExpenses / withdrawalRate : 0;
+    function targetForAge(age) {
+      return (ssBenefit > 0 && age >= ssAge) ? reducedWorkOptionalNumber : workOptionalNumber;
+    }
+
+    ssLegendItemEl.style.display = ssBenefit > 0 ? "inline-flex" : "none";
+    ssLegendTextEl.textContent = "Social Security starts (age " + ssAge + ")";
+
+    updateExpensesPreview();
+    renderSavingsTable(returnRate, withdrawalRate);
+
+    // project year by year
+    var MAX_YEARS = 70;
+    var balances = [totalInvested];
+    var ages = [currentAge];
+    var crossingYear = -1;
+    var crossingTarget = workOptionalNumber;
+    if (totalInvested >= targetForAge(currentAge)) {
+      crossingYear = 0;
+      crossingTarget = targetForAge(currentAge);
+    }
+
+    var balance = totalInvested;
+    for (var y = 1; y <= MAX_YEARS; y++) {
+      balance = balance * (1 + returnRate) + annualInvest;
+      var ageThisYear = currentAge + y;
+      balances.push(balance);
+      ages.push(ageThisYear);
+      if (crossingYear === -1) {
+        var targetThisYear = targetForAge(ageThisYear);
+        if (balance >= targetThisYear) {
+          crossingYear = y;
+          crossingTarget = targetThisYear;
+        }
+      }
+    }
+
+    var taxEstimate = updateTaxEstimate(income);
+
+    lastResult = {
+      currentAge: currentAge, income: income, totalInvested: totalInvested,
+      annualInvest: annualInvest, targetExpenses: targetExpenses,
+      returnRate: returnRate, withdrawalRate: withdrawalRate,
+      workOptionalNumber: workOptionalNumber,
+      ssAge: ssAge, ssBenefit: ssBenefit,
+      crossingYear: crossingYear,
+      crossingTarget: crossingTarget,
+      workOptionalAge: crossingYear >= 0 ? currentAge + crossingYear : null,
+      city: cityInput.value.trim(),
+      stateAbbr: taxEstimate.stateAbbr,
+      estFederalTax: taxEstimate.fedTax,
+      estStateTax: taxEstimate.stateTax
+    };
+
+    renderResult();
+    renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit);
+  }
+
+  function renderResult() {
+    var r = lastResult;
+    if (r.crossingYear === -1) {
+      resultEyebrowEl.textContent = "Not there yet, within";
+      resultAgeEl.textContent = "70 years";
+      resultSubEl.textContent = "At these numbers, you don't cross " + fmtMoney(r.workOptionalNumber) +
+        " within 70 years. Try increasing contributions or adjusting assumptions.";
+      wineLineEl.textContent = "This one may need a different vineyard — try adjusting your inputs.";
+      return;
+    }
+    resultEyebrowEl.textContent = "You'll be work optional at";
+    resultAgeEl.textContent = "Age " + fmtInt(r.workOptionalAge);
+    var ssNote = (r.ssBenefit > 0 && r.workOptionalAge >= r.ssAge)
+      ? " That number's lower than it'd be without Social Security, which kicks in at " + r.ssAge + "."
+      : "";
+    resultSubEl.textContent = "That's " + r.crossingYear + " year" + (r.crossingYear === 1 ? "" : "s") +
+      " from now — your portfolio is projected to reach " + fmtMoney(r.crossingTarget) + "." + ssNote;
+    wineLineEl.textContent = wineLineFor(r.crossingYear);
+  }
+
+  function renderChart(ages, balances, targetForAge, crossingYear, ssAge, ssBenefit) {
+    var endIndex = ages.length - 1;
+    if (crossingYear >= 0) {
+      endIndex = Math.min(ages.length - 1, crossingYear + Math.max(5, Math.round(crossingYear * 0.2)));
+    }
+    if (ssBenefit > 0) {
+      var ssIdx = ages.indexOf(ssAge);
+      if (ssIdx >= 0) {
+        endIndex = Math.max(endIndex, Math.min(ages.length - 1, ssIdx + 3));
+      }
+    }
+    var labels = ages.slice(0, endIndex + 1);
+    var data = balances.slice(0, endIndex + 1);
+    var targetLine = labels.map(function (age, i) {
+      if (crossingYear >= 0 && i > crossingYear) return null;
+      return targetForAge(age);
+    });
+
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.data.datasets[1].data = targetLine;
+    chart.$ssClaimAge = (ssBenefit > 0 && labels.indexOf(ssAge) !== -1) ? ssAge : null;
+    chart.update();
+  }
+
+  // ---------- share ----------
+  shareBtn.addEventListener("click", function () {
+    var r = lastResult;
+    var text;
+    if (r.crossingYear === -1) {
+      text = "I'm crunching my work-optional number 🍷 — find yours at pourtfolios.com";
+    } else {
+      text = "I'll be work optional at " + r.workOptionalAge + " 🍷 — find yours at pourtfolios.com";
+    }
+    function showToast() {
+      copiedToast.textContent = "Copied to clipboard!";
+      setTimeout(function () { copiedToast.textContent = ""; }, 2500);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showToast, function () { fallbackCopy(text, showToast); });
+    } else {
+      fallbackCopy(text, showToast);
+    }
+  });
+  function fallbackCopy(text, cb) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+    cb();
+  }
+
+  // ---------- email capture (client-side only) ----------
+  emailSubmitBtn.addEventListener("click", function () {
+    var email = emailInput.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      emailInput.focus();
+      return;
+    }
+    console.log("[work-optional-calculator] email captured:", email, lastResult);
+    try {
+      var stored = JSON.parse(localStorage.getItem("woc_emails") || "[]");
+      stored.push({ email: email, capturedAt: new Date().toISOString(), result: lastResult });
+      localStorage.setItem("woc_emails", JSON.stringify(stored));
+    } catch (e) {}
+    emailConfirm.classList.add("show");
+    emailInput.value = "";
+  });
+
+  // ---------- init ----------
+  setBreakdownOpen(false);
+  updateMatrixLimits();
+  updateExpensesPreview();
+  recalc();
+})();
+</script>
+</body>
+</html>
