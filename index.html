@@ -205,6 +205,13 @@
     margin: 0;
   }
 
+  .input-section + .input-section {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .input-section .section-title { margin-bottom: 16px; }
+
   .field { margin-bottom: 20px; }
   .field:last-child { margin-bottom: 0; }
 
@@ -443,39 +450,6 @@
   .three-fund p { margin: 10px 0 0; }
   .three-fund a { color: var(--wine-600); font-weight: 600; text-decoration: none; }
   .three-fund a:hover { text-decoration: underline; }
-
-  .tax-estimate {
-    margin-bottom: 20px;
-    background: var(--surface-raised);
-    border-radius: var(--radius-md);
-    padding: 14px 16px;
-  }
-  .tax-estimate-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-    padding: 4px 0;
-  }
-  .tax-estimate-row .tax-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
-  }
-  .tax-estimate-row .tax-value {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    font-weight: 700;
-    color: var(--text-strong);
-  }
-  .tax-note {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin: 8px 0 0;
-    line-height: 1.4;
-  }
 
   /* Result card */
   .result-card {
@@ -964,23 +938,12 @@
     <div class="inputs-col">
 
       <div class="card">
+        <div class="input-section">
+        <p class="section-title">About you</p>
         <div class="field">
           <label class="field-label" for="currentAge">Current age</label>
           <div class="input-shell">
             <input type="number" id="currentAge" value="30" min="18" max="80" step="1">
-          </div>
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label class="field-label" for="cityInput" style="margin-bottom:0;">City</label>
-            <div class="info-tip align-left" id="cityInfoTip">
-              <button type="button" aria-label="More info">i</button>
-              <div class="bubble">We use this to estimate your state income tax below. Include a state abbreviation for accuracy, e.g. "Austin, TX" — otherwise we'll only estimate federal tax.</div>
-            </div>
-          </div>
-          <div class="input-shell">
-            <input type="text" id="cityInput" placeholder="e.g. Austin, TX">
           </div>
         </div>
 
@@ -990,18 +953,6 @@
             <span class="prefix">$</span>
             <input type="text" inputmode="numeric" id="annualIncome" class="with-prefix" value="90,000">
           </div>
-        </div>
-
-        <div class="tax-estimate" id="taxEstimate">
-          <div class="tax-estimate-row">
-            <span class="tax-label">Est. federal tax</span>
-            <span class="tax-value" id="fedTaxValue">$0</span>
-          </div>
-          <div class="tax-estimate-row">
-            <span class="tax-label" id="stateTaxLabel">Est. state tax</span>
-            <span class="tax-value" id="stateTaxValue">—</span>
-          </div>
-          <p class="tax-note" id="taxNote">Rough single-filer estimate using approximate 2026 federal brackets — not tax advice.</p>
         </div>
 
         <div class="field">
@@ -1167,9 +1118,10 @@
 
           </div>
         </div>
-      </div>
+        </div>
 
-      <div class="card">
+        <div class="input-section">
+        <p class="section-title">Retirement assumptions</p>
         <div class="field">
           <label class="field-label" for="expensesSlider">Target retirement expenses</label>
           <div class="slider-row">
@@ -1238,9 +1190,10 @@
           </div>
           <p class="slider-sub">Once you're work optional, your withdrawal amount grows with inflation each year, while your portfolio keeps compounding at the expected return rate above.</p>
         </div>
-      </div>
+        </div>
 
-      <div class="card">
+        <div class="input-section">
+        <p class="section-title">Social Security</p>
         <div class="field">
           <label class="field-label" for="ssAgeNumber">Age you'll start collecting</label>
           <div class="slider-row">
@@ -1258,6 +1211,7 @@
             <input type="text" inputmode="numeric" id="ssBenefit" class="with-prefix" value="24,000">
           </div>
           <p class="slider-sub">A rough placeholder — get your real number from your <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener">ssa.gov account</a>. Set to $0 to leave Social Security out of the math entirely.</p>
+        </div>
         </div>
       </div>
 
@@ -1388,12 +1342,6 @@
 
   // ---------- element refs ----------
   var currentAgeEl = document.getElementById("currentAge");
-  var cityInput = document.getElementById("cityInput");
-  var cityInfoTip = document.getElementById("cityInfoTip");
-  var fedTaxValueEl = document.getElementById("fedTaxValue");
-  var stateTaxLabelEl = document.getElementById("stateTaxLabel");
-  var stateTaxValueEl = document.getElementById("stateTaxValue");
-  var taxNoteEl = document.getElementById("taxNote");
   var annualIncomeEl = document.getElementById("annualIncome");
   var totalInvestedEl = document.getElementById("totalInvested");
 
@@ -1701,7 +1649,7 @@
   bindSliderPair(ssAgeSliderEl, ssAgeNumberEl, recalc);
   ssBenefitEl.addEventListener("input", recalc);
 
-  var allInfoTips = [returnInfoTip, cityInfoTip, inflationInfoTip];
+  var allInfoTips = [returnInfoTip, inflationInfoTip];
   allInfoTips.forEach(function (tip) {
     tip.querySelector("button").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -1725,7 +1673,6 @@
     updateMatrixLimits();
     recalc();
   });
-  cityInput.addEventListener("input", recalc);
 
   // ---------- wine lines (easy to edit) ----------
   var WINE_LINES = [
@@ -2110,135 +2057,6 @@
     }).join("");
   }
 
-  // ---------- rough tax estimate (single filer, federal + state) ----------
-  // Approximate 2026 federal brackets (single filer), inflation-adjusted from 2025 IRS figures.
-  var FEDERAL_BRACKETS = [
-    { upTo: 12250, rate: 0.10 },
-    { upTo: 49800, rate: 0.12 },
-    { upTo: 106150, rate: 0.22 },
-    { upTo: 202625, rate: 0.24 },
-    { upTo: 257300, rate: 0.32 },
-    { upTo: 643450, rate: 0.35 },
-    { upTo: Infinity, rate: 0.37 }
-  ];
-  var FEDERAL_STANDARD_DEDUCTION = 15400;
-
-  function estimateFederalTax(income) {
-    var taxable = Math.max(0, income - FEDERAL_STANDARD_DEDUCTION);
-    var tax = 0, lower = 0;
-    for (var i = 0; i < FEDERAL_BRACKETS.length; i++) {
-      var bracket = FEDERAL_BRACKETS[i];
-      if (taxable <= lower) break;
-      var upperForBracket = Math.min(taxable, bracket.upTo);
-      tax += (upperForBracket - lower) * bracket.rate;
-      lower = bracket.upTo;
-    }
-    return tax;
-  }
-
-  // Single representative rate per state — flat rate for flat-tax states, an
-  // approximate top marginal rate for progressive states, 0 for no-income-tax
-  // states. This is a rough estimate, not a bracket-accurate calculation.
-  var STATE_TAX_RATES = {
-    AL: 0.05, AK: 0, AZ: 0.025, AR: 0.039, CA: 0.093, CO: 0.044, CT: 0.0699,
-    DE: 0.066, FL: 0, GA: 0.0539, HI: 0.0825, ID: 0.058, IL: 0.0495, IN: 0.0305,
-    IA: 0.038, KS: 0.057, KY: 0.04, LA: 0.03, ME: 0.0715, MD: 0.0575, MA: 0.05,
-    MI: 0.0425, MN: 0.0985, MS: 0.044, MO: 0.048, MT: 0.059, NE: 0.0584, NV: 0,
-    NH: 0, NJ: 0.0637, NM: 0.059, NY: 0.0685, NC: 0.0425, ND: 0.025, OH: 0.035,
-    OK: 0.0475, OR: 0.099, PA: 0.0307, RI: 0.0599, SC: 0.062, SD: 0, TN: 0,
-    TX: 0, UT: 0.0455, VT: 0.0875, VA: 0.0575, WA: 0, WV: 0.0482, WI: 0.0765,
-    WY: 0, DC: 0.0895
-  };
-  var STATE_NAME_TO_ABBR = {
-    alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
-    colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
-    hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
-    kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
-    massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
-    missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
-    "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
-    "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
-    oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
-    "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
-    virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
-    wyoming: "WY", "district of columbia": "DC", "washington dc": "DC"
-  };
-  // Convenience lookup for common unambiguous major cities, used only when no
-  // state is typed alongside the city.
-  var CITY_TO_STATE = {
-    "new york": "NY", "new york city": "NY", nyc: "NY", brooklyn: "NY",
-    "los angeles": "CA", "san francisco": "CA", "san diego": "CA", oakland: "CA",
-    sacramento: "CA", "san jose": "CA", chicago: "IL", houston: "TX",
-    austin: "TX", "san antonio": "TX", dallas: "TX", "fort worth": "TX",
-    "el paso": "TX", phoenix: "AZ", tucson: "AZ", philadelphia: "PA",
-    pittsburgh: "PA", seattle: "WA", spokane: "WA",
-    denver: "CO", boulder: "CO", boston: "MA", cambridge: "MA",
-    nashville: "TN", memphis: "TN", atlanta: "GA", charlotte: "NC",
-    raleigh: "NC", columbus: "OH", cleveland: "OH", cincinnati: "OH",
-    indianapolis: "IN", detroit: "MI", "ann arbor": "MI",
-    minneapolis: "MN", "st paul": "MN", "st. paul": "MN", miami: "FL",
-    orlando: "FL", tampa: "FL", jacksonville: "FL", "las vegas": "NV",
-    reno: "NV", baltimore: "MD", "washington": "DC", "new orleans": "LA",
-    "kansas city": "MO", "st louis": "MO", "st. louis": "MO",
-    honolulu: "HI", anchorage: "AK", milwaukee: "WI", omaha: "NE",
-    louisville: "KY", "salt lake city": "UT", providence: "RI",
-    hartford: "CT", richmond: "VA", "virginia beach": "VA", charleston: "SC",
-    boise: "ID", albuquerque: "NM", tulsa: "OK", "oklahoma city": "OK"
-  };
-  var STATE_ABBR_SET = {};
-  Object.keys(STATE_TAX_RATES).forEach(function (abbr) { STATE_ABBR_SET[abbr] = true; });
-
-  function parseStateFromCity(input) {
-    if (!input) return null;
-    var raw = input.trim();
-    if (!raw) return null;
-
-    var parts = raw.split(",");
-    if (parts.length > 1) {
-      var afterComma = parts[parts.length - 1].trim();
-      var abbrGuess = afterComma.toUpperCase();
-      if (STATE_ABBR_SET.hasOwnProperty(abbrGuess)) return abbrGuess;
-      var nameGuess = STATE_NAME_TO_ABBR[afterComma.toLowerCase()];
-      if (nameGuess) return nameGuess;
-    }
-
-    var wholeLower = raw.toLowerCase();
-    if (STATE_NAME_TO_ABBR.hasOwnProperty(wholeLower)) return STATE_NAME_TO_ABBR[wholeLower];
-    if (STATE_ABBR_SET.hasOwnProperty(raw.toUpperCase()) && raw.length <= 2) return raw.toUpperCase();
-
-    var tokens = raw.replace(/,/g, " ").trim().split(/\s+/);
-    var lastToken = tokens[tokens.length - 1];
-    if (lastToken && STATE_ABBR_SET.hasOwnProperty(lastToken.toUpperCase()) && lastToken.length === 2) {
-      return lastToken.toUpperCase();
-    }
-
-    if (CITY_TO_STATE.hasOwnProperty(wholeLower)) return CITY_TO_STATE[wholeLower];
-    var firstTokenGuess = tokens.slice(0, -1).join(" ").toLowerCase() || wholeLower;
-    if (CITY_TO_STATE.hasOwnProperty(firstTokenGuess)) return CITY_TO_STATE[firstTokenGuess];
-
-    return null;
-  }
-
-  function updateTaxEstimate(income) {
-    var fedTax = estimateFederalTax(income);
-    fedTaxValueEl.textContent = fmtMoney(fedTax);
-
-    var stateAbbr = parseStateFromCity(cityInput.value);
-    var stateTax = null;
-    if (stateAbbr != null) {
-      var rate = STATE_TAX_RATES[stateAbbr];
-      stateTax = income * rate;
-      stateTaxLabelEl.textContent = "Est. state tax (" + stateAbbr + ")";
-      stateTaxValueEl.textContent = fmtMoney(stateTax);
-      taxNoteEl.textContent = "Rough single-filer estimate using approximate 2026 federal brackets and a single representative " + stateAbbr + " rate — not tax advice.";
-    } else {
-      stateTaxLabelEl.textContent = "Est. state tax";
-      stateTaxValueEl.textContent = "—";
-      taxNoteEl.textContent = "Add a state to your city (e.g. \"Austin, TX\") to estimate state tax too. Federal estimate uses approximate 2026 brackets — not tax advice.";
-    }
-    return { fedTax: fedTax, stateAbbr: stateAbbr, stateTax: stateTax };
-  }
-
   // ---------- core calc ----------
   var lastResult = null;
 
@@ -2314,7 +2132,6 @@
       }
     }
 
-    var taxEstimate = updateTaxEstimate(income);
     var workOptionalAge = crossingYear >= 0 ? currentAge + crossingYear : null;
     var workOptionalBalance = crossingYear >= 0 ? balances[crossingYear] : null;
     var endAge = ages[ages.length - 1];
@@ -2336,11 +2153,7 @@
       finalBalance: finalBalance,
       hasRetirementPhase: hasRetirementPhase,
       moneyLasts: moneyLasts,
-      depletionAge: depletionAge,
-      city: cityInput.value.trim(),
-      stateAbbr: taxEstimate.stateAbbr,
-      estFederalTax: taxEstimate.fedTax,
-      estStateTax: taxEstimate.stateTax
+      depletionAge: depletionAge
     };
 
     renderResult();
