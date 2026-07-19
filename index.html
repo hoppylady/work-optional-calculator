@@ -155,8 +155,16 @@
     font-size: 15px;
   }
 
+  .intro-headline {
+    margin: 24px 0 8px;
+    font-family: var(--font-display);
+    font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+    font-weight: 700;
+    color: var(--cream-100);
+    letter-spacing: -0.01em;
+  }
   .intro-explainer {
-    margin: 24px 0 0;
+    margin: 0;
     font-size: 15px;
     line-height: 1.65;
     color: var(--text-on-wine-muted);
@@ -881,8 +889,9 @@
       <p>Find the age you can call work optional — based on your savings, contributions, and a few reasonable assumptions.</p>
     </header>
 
+    <p class="intro-headline">What does "work optional" actually mean?</p>
     <p class="intro-explainer">
-      Imagine a machine that quietly pays your bills every year, forever, whether or not you show up to a job. That's <strong>"work optional"</strong> — the point where your investments alone can cover your life, so a paycheck becomes a choice instead of a requirement. It doesn't mean you'll never work again: plenty of people who reach this point keep working, just on their own terms — fewer hours, a passion project, or nothing at all. Think of it less as a finish line and more as buying yourself a permission slip to choose.
+      It's the point where your invested money generates enough income, year after year, to cover your life — without a paycheck. Not savings sitting in a bank account earning nothing, but money actively invested and growing. That distinction matters: the path to work optional isn't just spending less, it's investing a high percentage of what you earn, consistently, so your money is working as hard as you are. Reach that point, and work becomes something you choose, not something you need.
     </p>
   </div>
 </div>
@@ -890,13 +899,14 @@
 <div class="wrap">
 
   <div class="card full-width-card">
-    <p class="section-title">Why savings rate matters more than income</p>
+    <p class="section-title">Why investing rate matters more than income</p>
     <p class="section-sub">
-      Here's the part that surprises most people: it's not your paycheck that decides how fast you get here — it's what share of it you save. Income is just the faucet; if spending rises right along with it, the tub never fills. Save 10% of anything and you're in for a multi-decade grind. Save half, and you can cut that timeline by more than two-thirds — using the same <span id="srReturnRef">7</span>% growth and <span id="srWithdrawalRef">4</span>% withdrawal assumptions you can fine-tune below. Same math, any income level, starting from $0.
+      To be clear — this means the percentage of your income you're actually investing (in a brokerage, 401k, IRA, etc.), not just setting aside. Cash sitting in a savings account doesn't compound the same way.
+      Here's the part that surprises most people: it's not your paycheck that decides how fast you get here — it's what share of it you invest. Income is just the faucet; if spending rises right along with it, the tub never fills. Invest 10% of anything and you're in for a multi-decade grind. Invest half, and you can cut that timeline by more than two-thirds — using the same <span id="srReturnRef">7</span>% growth and <span id="srWithdrawalRef">4</span>% withdrawal assumptions you can fine-tune below. Same math, any income level, starting from $0.
     </p>
     <table class="savings-table">
       <thead>
-        <tr><th>Savings rate</th><th>Years to work optional</th><th></th></tr>
+        <tr><th>Investing rate</th><th>Years to work optional</th><th></th></tr>
       </thead>
       <tbody id="savingsTableBody"></tbody>
     </table>
@@ -1238,8 +1248,10 @@
         <p class="longevity-disclaimer" id="longevityDisclaimer" style="display:none;">This projection assumes consistent returns and spending — real markets and life are less predictable. This is a simplified educational model, not a guarantee.</p>
 
         <div class="actions-row">
-          <button class="primary-btn" id="shareBtn" type="button">Share your result</button>
+          <button class="primary-btn" id="shareCardBtn" type="button">Share your card 🍾</button>
+          <button class="ghost-btn" id="shareBtn" type="button">Copy result as text</button>
         </div>
+        <p class="copied-toast" id="cardToast"></p>
         <p class="copied-toast" id="copiedToast"></p>
 
         <div class="email-capture">
@@ -1422,6 +1434,8 @@
 
   var shareBtn = document.getElementById("shareBtn");
   var copiedToast = document.getElementById("copiedToast");
+  var shareCardBtn = document.getElementById("shareCardBtn");
+  var cardToast = document.getElementById("cardToast");
 
   var emailInput = document.getElementById("emailInput");
   var emailSubmitBtn = document.getElementById("emailSubmitBtn");
@@ -2377,6 +2391,234 @@
     document.body.removeChild(ta);
     cb();
   }
+
+  // ---------- shareable result card (canvas, Pourtfolios IG/TikTok story style) ----------
+  var CARD_W = 1080, CARD_H = 1920;
+  var CARD_CREAM = "#ece1c9";
+  var CARD_CREAM_MUTED = "rgba(230,220,196,.74)";
+  var CARD_CREAM_FAINT = "rgba(230,220,196,.6)";
+  var CARD_CITRINE = "#c1b84c";
+
+  var cardLogoImg = new Image();
+  var cardLogoReady = false;
+  cardLogoImg.onload = function () { cardLogoReady = true; };
+  cardLogoImg.src = "assets/logo-mark-cream.png";
+  function ensureLogoLoaded() {
+    return new Promise(function (resolve) {
+      if (cardLogoReady) return resolve();
+      cardLogoImg.addEventListener("load", function () { resolve(); }, { once: true });
+      cardLogoImg.addEventListener("error", function () { resolve(); }, { once: true });
+    });
+  }
+
+  // word-wrap for runs of differently-styled tokens (word, font, color), each treated as atomic
+  function wrapTokens(ctx, tokens, maxWidth) {
+    var lines = [];
+    var current = [];
+    var currentWidth = 0;
+    tokens.forEach(function (tok) {
+      ctx.font = tok.font;
+      var w = ctx.measureText(tok.text).width;
+      var spaceWidth = current.length ? ctx.measureText(" ").width : 0;
+      if (current.length && currentWidth + spaceWidth + w > maxWidth) {
+        lines.push(current);
+        current = [tok];
+        currentWidth = w;
+      } else {
+        current.push(tok);
+        currentWidth += spaceWidth + w;
+      }
+    });
+    if (current.length) lines.push(current);
+    return lines;
+  }
+  function tokensFromText(text, font, color) {
+    return text.split(" ").filter(function (s) { return s.length; }).map(function (t) {
+      return { text: t, font: font, color: color };
+    });
+  }
+  function drawTokenLines(ctx, lines, x, startY, lineHeight) {
+    lines.forEach(function (line, i) {
+      var y = startY + i * lineHeight;
+      var cursorX = x;
+      line.forEach(function (tok, wi) {
+        ctx.font = tok.font;
+        ctx.fillStyle = tok.color;
+        ctx.textAlign = "left";
+        ctx.fillText(tok.text, cursorX, y);
+        cursorX += ctx.measureText(tok.text).width;
+        if (wi < line.length - 1) cursorX += ctx.measureText(" ").width;
+      });
+    });
+  }
+  function drawTrackedText(ctx, text, x, y, tracking) {
+    var cursor = x;
+    for (var i = 0; i < text.length; i++) {
+      ctx.fillText(text[i], cursor, y);
+      cursor += ctx.measureText(text[i]).width + tracking;
+    }
+  }
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function buildShareCard(r) {
+    var canvas = document.createElement("canvas");
+    canvas.width = CARD_W;
+    canvas.height = CARD_H;
+    var ctx = canvas.getContext("2d");
+    ctx.textBaseline = "alphabetic";
+
+    // background — wine-900, matches the template's ".wine" story frames
+    ctx.fillStyle = "#37110f";
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    var contentX = 96;
+    var contentW = CARD_W - contentX * 2; // 888, same safe-zone width as the template
+
+    // brand mark, top-left — same position as the template's ".mark"
+    if (cardLogoReady && cardLogoImg.naturalWidth) {
+      var logoW = 120;
+      var logoH = logoW * (cardLogoImg.naturalHeight / cardLogoImg.naturalWidth);
+      ctx.globalAlpha = 0.9;
+      ctx.drawImage(cardLogoImg, contentX, 110, logoW, logoH);
+      ctx.globalAlpha = 1;
+    }
+
+    var age = fmtInt(r.workOptionalAge);
+    var pct = r.income > 0 ? Math.round((r.annualInvest / r.income) * 100) : 0;
+
+    // ---- primary: headline ----
+    var headlineFontSize = 100;
+    var headlineFont = "700 " + headlineFontSize + "px 'Bodoni Moda', serif";
+    var headlineTokens = tokensFromText("Work optional at", headlineFont, CARD_CREAM)
+      .concat(tokensFromText("Age " + age, headlineFont, CARD_CITRINE))
+      .concat([{ text: "🍾", font: headlineFont, color: CARD_CREAM }]);
+    var headlineLines = wrapTokens(ctx, headlineTokens, contentW);
+    var headlineLineHeight = headlineFontSize * 1.04;
+
+    // ---- supporting line ----
+    var supportFontSize = 42;
+    var supportFont = "400 " + supportFontSize + "px 'Hanken Grotesk', sans-serif";
+    var supportLines = wrapTokens(ctx, tokensFromText(
+      "Investing " + pct + "% of my income to get there", supportFont, CARD_CREAM_MUTED
+    ), contentW);
+    var supportLineHeight = supportFontSize * 1.4;
+
+    // ---- bottom tag: the wine-metaphor line, in the template's translucent "qcard" treatment ----
+    var tagFontSize = 40;
+    var tagFont = "italic 500 " + tagFontSize + "px 'Bodoni Moda', serif";
+    var tagPaddingX = 48, tagPaddingY = 44;
+    var tagLines = wrapTokens(ctx, tokensFromText(
+      wineLineFor(r.crossingYear), tagFont, CARD_CREAM
+    ), contentW - tagPaddingX * 2);
+    var tagLineHeight = tagFontSize * 1.22;
+    var tagCardHeight = tagPaddingY * 2 + tagLines.length * tagLineHeight - (tagLineHeight - tagFontSize);
+
+    // ---- vertical composition (content pushed toward the lower-middle, like the template) ----
+    var gapHeadlineToSupport = 44, gapSupportToTag = 56;
+    var blockHeight = headlineLines.length * headlineLineHeight + gapHeadlineToSupport +
+      supportLines.length * supportLineHeight + gapSupportToTag + tagCardHeight;
+    var safeTop = 300, safeBottom = 1600;
+    var startY = Math.max(safeTop, safeBottom - blockHeight);
+
+    var cursorY = startY + headlineFontSize * 0.9;
+    drawTokenLines(ctx, headlineLines, contentX, cursorY, headlineLineHeight);
+    cursorY += (headlineLines.length - 1) * headlineLineHeight + gapHeadlineToSupport + supportFontSize * 0.9;
+    drawTokenLines(ctx, supportLines, contentX, cursorY, supportLineHeight);
+    cursorY += (supportLines.length - 1) * supportLineHeight + gapSupportToTag;
+
+    var tagCardY = cursorY;
+    ctx.fillStyle = "rgba(230,220,196,0.08)";
+    roundRectPath(ctx, contentX, tagCardY, contentW, tagCardHeight, 28);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(237,233,220,0.22)";
+    roundRectPath(ctx, contentX, tagCardY, contentW, tagCardHeight, 28);
+    ctx.stroke();
+    drawTokenLines(ctx, tagLines, contentX + tagPaddingX, tagCardY + tagPaddingY + tagFontSize * 0.85, tagLineHeight);
+
+    // ---- watermark — same bottom-left placement/style as the template's "@pourtfolios" handle ----
+    ctx.font = "500 30px 'Spline Sans Mono', monospace";
+    ctx.fillStyle = CARD_CREAM_FAINT;
+    drawTrackedText(ctx, "pourtfolios.com", contentX, CARD_H - 190, 3.6);
+
+    return canvas;
+  }
+
+  function loadCardFonts() {
+    if (!(window.FontFace && document.fonts && document.fonts.load)) return Promise.resolve();
+    return Promise.all([
+      document.fonts.load("700 100px 'Bodoni Moda'"),
+      document.fonts.load("italic 500 40px 'Bodoni Moda'"),
+      document.fonts.load("400 42px 'Hanken Grotesk'"),
+      document.fonts.load("500 30px 'Spline Sans Mono'")
+    ]).catch(function () {});
+  }
+
+  shareCardBtn.addEventListener("click", function () {
+    var r = lastResult;
+    if (!r || r.crossingYear === -1 || r.workOptionalAge == null) {
+      cardToast.textContent = "Adjust your inputs so we can calculate an age before sharing.";
+      setTimeout(function () { cardToast.textContent = ""; }, 3500);
+      return;
+    }
+
+    var originalLabel = shareCardBtn.textContent;
+    shareCardBtn.disabled = true;
+    shareCardBtn.textContent = "Building your card…";
+
+    Promise.all([ensureLogoLoaded(), loadCardFonts()])
+      .then(function () { return document.fonts && document.fonts.ready ? document.fonts.ready : null; })
+      .then(function () {
+        var canvas = buildShareCard(r);
+        return new Promise(function (resolve, reject) {
+          canvas.toBlob(function (blob) {
+            if (blob) resolve(blob); else reject(new Error("toBlob failed"));
+          }, "image/png");
+        });
+      })
+      .then(function (blob) {
+        var fileName = "work-optional-age-" + fmtInt(r.workOptionalAge) + ".png";
+        var shareText = "I'll be work optional at " + fmtInt(r.workOptionalAge) + " 🍾 — find your number at pourtfolios.com";
+        var file;
+        try { file = new File([blob], fileName, { type: "image/png" }); } catch (e) { file = null; }
+
+        if (file && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          return navigator.share({ files: [file], title: "Work Optional Calculator", text: shareText })
+            .catch(function (shareErr) {
+              if (shareErr && shareErr.name === "AbortError") return; // user cancelled — not an error
+              throw shareErr;
+            });
+        }
+
+        // fallback: direct download (most desktop browsers)
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        cardToast.textContent = "Image downloaded — ready to share!";
+        setTimeout(function () { cardToast.textContent = ""; }, 3000);
+      })
+      .catch(function () {
+        cardToast.textContent = "Something went wrong building the card — try again.";
+        setTimeout(function () { cardToast.textContent = ""; }, 3000);
+      })
+      .then(function () {
+        shareCardBtn.disabled = false;
+        shareCardBtn.textContent = originalLabel;
+      });
+  });
 
   // ---------- email capture (client-side only) ----------
   emailSubmitBtn.addEventListener("click", function () {

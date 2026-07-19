@@ -38,7 +38,11 @@
       "Bash(git fetch *)",
       "Bash(git rm *)",
       "Bash(git pull *)",
-      "Bash(SP=/private/tmp/claude-501/-Users-snehapankaj-work-optional-calculator/04cb30b2-b74e-4695-a091-1f46e2a7225c/scratchpad node /private/tmp/claude-501/-Users-snehapankaj-work-optional-calculator/04cb30b2-b74e-4695-a091-1f46e2a7225c/scratchpad/shot_caution.mjs)"
+      "Bash(SP=/private/tmp/claude-501/-Users-snehapankaj-work-optional-calculator/04cb30b2-b74e-4695-a091-1f46e2a7225c/scratchpad node /private/tmp/claude-501/-Users-snehapankaj-work-optional-calculator/04cb30b2-b74e-4695-a091-1f46e2a7225c/scratchpad/shot_caution.mjs)",
+      "Bash(python3 -m http.server 8791)",
+      "Bash(echo \"started with pid $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8791/index.html)",
+      "Bash(lsof -ti:8791)"
     ]
   }
 }
