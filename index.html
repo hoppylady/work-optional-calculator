@@ -146,25 +146,12 @@
     font-family: var(--font-display);
     font-size: clamp(1.75rem, 3.6vw, 2.5rem);
     color: var(--cream-100);
-    margin: 0 0 10px;
-    letter-spacing: -0.01em;
-  }
-  header.hero p {
-    color: var(--text-on-wine-muted);
     margin: 0;
-    font-size: 15px;
+    letter-spacing: -0.01em;
   }
 
-  .intro-headline {
-    margin: 24px 0 8px;
-    font-family: var(--font-display);
-    font-size: clamp(1.15rem, 2.2vw, 1.4rem);
-    font-weight: 700;
-    color: var(--cream-100);
-    letter-spacing: -0.01em;
-  }
   .intro-explainer {
-    margin: 0;
+    margin: 20px 0 0;
     font-size: 15px;
     line-height: 1.65;
     color: var(--text-on-wine-muted);
@@ -815,6 +802,55 @@
     color: var(--text-strong);
   }
 
+  /* Investing-rate explainer: pie chart + table side by side */
+  .investing-rate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 32px;
+    align-items: start;
+    margin-top: 8px;
+  }
+  .income-split-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .income-split-visual canvas {
+    width: 220px;
+    height: 220px;
+    max-width: 100%;
+  }
+  .pie-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-body);
+  }
+  .pie-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pie-swatch {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .pie-caption {
+    margin: 14px 0 0;
+    max-width: 320px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+  .income-split-text .section-sub { margin: 0; }
+
   /* Savings-rate table */
   .savings-table {
     width: 100%;
@@ -886,10 +922,8 @@
     </div>
     <header class="hero">
       <h1>Work Optional Calculator</h1>
-      <p>Find the age you can call work optional — based on your savings, contributions, and a few reasonable assumptions.</p>
     </header>
 
-    <p class="intro-headline">So what does work optional mean?</p>
     <p class="intro-explainer">
       Every dollar you earn goes one of three places: spent, saved, or invested. Only one of those actually builds wealth. Spent dollars are gone. Saved dollars — sitting in a checking or savings account — barely keep pace with inflation, so they're not really growing at all. Invested dollars are the only ones doing real work: compounding, year after year, until eventually they generate enough to cover your life without a paycheck. That's work optional — the point where a job becomes a choice, not a requirement. Below, we call this your investing rate: the share of every dollar you actually put to work, not just set aside. It matters more than how much you earn, and it's the single biggest lever you have.
     </p>
@@ -900,16 +934,29 @@
 
   <div class="card full-width-card">
     <p class="section-title">Why investing rate matters more than income</p>
-    <p class="section-sub">
-      As we mentioned above, this means the percentage of your income you're actually investing (in a brokerage, 401k, IRA, etc.), not just setting aside. Cash sitting in a savings account doesn't compound the same way.
-      Here's the part that surprises most people: it's not your paycheck that decides how fast you get here — it's what share of it you invest. Income is just the faucet; if spending rises right along with it, the tub never fills. Invest 10% of anything and you're in for a multi-decade grind. Invest half, and you can cut that timeline by more than two-thirds — using the same <span id="srReturnRef">7</span>% growth and <span id="srWithdrawalRef">4</span>% withdrawal assumptions you can fine-tune below. Same math, any income level, starting from $0.
-    </p>
-    <table class="savings-table">
-      <thead>
-        <tr><th>Investing rate</th><th>Years to work optional</th><th></th></tr>
-      </thead>
-      <tbody id="savingsTableBody"></tbody>
-    </table>
+    <div class="investing-rate-grid">
+      <div class="income-split-visual">
+        <canvas id="incomeSplitChart" width="220" height="220" role="img" aria-label="Illustrative pie chart of where a dollar of income goes: 50% invested, 40% spent, 10% saved"></canvas>
+        <div class="pie-legend">
+          <span><span class="pie-swatch" style="background:var(--wine-600)"></span>Invested 50%</span>
+          <span><span class="pie-swatch" style="background:var(--taupe-400)"></span>Spent 40%</span>
+          <span><span class="pie-swatch" style="background:var(--sand-300)"></span>Saved 10%</span>
+        </div>
+        <p class="pie-caption">A lot of people save diligently and assume that's enough — but saved money sitting in a bank account isn't the same as invested money. Only the invested slice is working toward the numbers on the right.</p>
+      </div>
+      <div class="income-split-text">
+        <p class="section-sub">
+          As we mentioned above, this means the percentage of your income you're actually investing (in a brokerage, 401k, IRA, etc.), not just setting aside. Cash sitting in a savings account doesn't compound the same way.
+          Here's the part that surprises most people: it's not your paycheck that decides how fast you get here — it's what share of it you invest. Income is just the faucet; if spending rises right along with it, the tub never fills. Invest 10% of anything and you're in for a multi-decade grind. Invest half, and you can cut that timeline by more than two-thirds — using the same <span id="srReturnRef">7</span>% growth and <span id="srWithdrawalRef">4</span>% withdrawal assumptions you can fine-tune below. Same math, any income level, starting from $0.
+        </p>
+        <table class="savings-table">
+          <thead>
+            <tr><th>Investing rate</th><th>Years to work optional</th><th></th></tr>
+          </thead>
+          <tbody id="savingsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <div class="layout">
@@ -1999,6 +2046,43 @@
     }
   });
 
+  // ---------- income-split pie chart (static illustration, doesn't depend on user inputs) ----------
+  function drawIncomeSplitChart() {
+    var canvas = document.getElementById("incomeSplitChart");
+    if (!canvas) return;
+    var size = 220;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    var pieCtx = canvas.getContext("2d");
+    pieCtx.scale(dpr, dpr);
+
+    var slices = [
+      { pct: 50, color: cssVar("--wine-600") },
+      { pct: 40, color: cssVar("--taupe-400") },
+      { pct: 10, color: cssVar("--sand-300") }
+    ];
+
+    var cx = size / 2, cy = size / 2;
+    var radius = size / 2 - 4;
+    var strokeColor = cssVar("--surface-card");
+    var angle = -Math.PI / 2;
+
+    slices.forEach(function (slice) {
+      var sweep = (slice.pct / 100) * Math.PI * 2;
+      pieCtx.beginPath();
+      pieCtx.moveTo(cx, cy);
+      pieCtx.arc(cx, cy, radius, angle, angle + sweep);
+      pieCtx.closePath();
+      pieCtx.fillStyle = slice.color;
+      pieCtx.fill();
+      pieCtx.lineWidth = 2;
+      pieCtx.strokeStyle = strokeColor;
+      pieCtx.stroke();
+      angle += sweep;
+    });
+  }
+
   // ---------- savings-rate-matters table ----------
   var SAVINGS_RATES = [10, 25, 50, 75];
   function renderSavingsTable(returnRate, withdrawalRate) {
@@ -2647,6 +2731,7 @@
   setBreakdownOpen(false);
   updateMatrixLimits();
   updateExpensesPreview();
+  drawIncomeSplitChart();
   recalc();
 })();
 </script>
