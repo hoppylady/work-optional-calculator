@@ -535,6 +535,28 @@
     height: 320px;
   }
 
+  .chart-tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--text-strong);
+    color: var(--surface-card);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    box-shadow: var(--shadow-sm);
+    z-index: 5;
+    transition: opacity 100ms ease;
+  }
+  .chart-tooltip .tt-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .chart-tooltip .tt-line { opacity: 0.9; }
+
   .chart-legend-note {
     display: flex;
     justify-content: center;
@@ -557,6 +579,11 @@
     background: none;
     border-top: 2px dashed var(--citrine-600);
     height: 0;
+  }
+  .chart-legend-note .swatch.withdraw-bar {
+    background: rgba(156, 148, 47, 0.55);
+    height: 10px;
+    border-radius: 2px;
   }
   .chart-legend-note .swatch.ss-mark {
     background: none;
@@ -607,6 +634,37 @@
     max-width: 480px;
     line-height: 1.4;
   }
+
+  .extreme-growth-note {
+    position: relative;
+    margin-top: 12px;
+    padding: 10px 32px 10px 14px;
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+  .extreme-growth-note p {
+    font-size: 12px;
+    color: var(--text-body);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .extreme-growth-dismiss {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .extreme-growth-dismiss:hover { color: var(--text-body); }
 
   .actions-row {
     display: flex;
@@ -1094,7 +1152,7 @@
           </div>
         </div>
 
-        <div class="field" style="margin-bottom:0;">
+        <div class="field">
           <label class="field-label" for="withdrawalRate">Withdrawal rate (the "4% rule")</label>
           <div class="slider-row">
             <input type="range" id="withdrawalRate" min="2.5" max="6" step="0.25" value="4">
@@ -1104,6 +1162,24 @@
             </div>
           </div>
           <p class="slider-sub">Sets your target number: yearly expenses &divide; withdrawal rate.</p>
+        </div>
+
+        <div class="field" style="margin-bottom:0;">
+          <div class="label-row">
+            <label class="field-label" for="inflationRate" style="margin-bottom:0;">Expected inflation rate</label>
+            <div class="info-tip" id="inflationInfoTip">
+              <button type="button" aria-label="More info">i</button>
+              <div class="bubble">Your expenses are shown growing with inflation each year — this reflects rising costs, not a change in your actual buying power, which stays the same.</div>
+            </div>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="inflationRate" min="0" max="8" step="0.25" value="3">
+            <div class="slider-number-shell">
+              <input type="number" id="inflationRateNumber" class="slider-number" min="0" max="8" step="0.25" value="3">
+              <span class="slider-unit">%</span>
+            </div>
+          </div>
+          <p class="slider-sub">Once you're work optional, your withdrawal amount grows with inflation each year, while your portfolio keeps compounding at the expected return rate above.</p>
         </div>
       </div>
 
@@ -1141,10 +1217,12 @@
 
         <div class="chart-wrap">
           <canvas id="growthChart"></canvas>
+          <div class="chart-tooltip" id="chartTooltip"></div>
         </div>
         <div class="chart-legend-note">
           <span><span class="swatch line"></span>Projected portfolio value</span>
           <span><span class="swatch target"></span>Work optional number</span>
+          <span id="withdrawBarLegendItem" style="display:none;"><span class="swatch withdraw-bar"></span>Annual withdrawal</span>
           <span id="retireLegendItem" style="display:none;"><span class="swatch retire-mark"></span><span id="retireLegendText">🥂 Work optional begins</span></span>
           <span id="ssLegendItem" style="display:none;"><span class="swatch ss-mark"></span><span id="ssLegendText">Social Security starts</span></span>
         </div>
@@ -1152,6 +1230,10 @@
         <div class="longevity-callout" id="longevityCallout" style="display:none;">
           <p class="longevity-headline" id="longevityHeadline">Your money is projected to last.</p>
           <p class="longevity-sub" id="longevitySub">Your portfolio is projected to still be worth $0 at age 95 — 0 years after going work optional.</p>
+        </div>
+        <div class="extreme-growth-note" id="extremeGrowthNote" style="display:none;">
+          <button type="button" class="extreme-growth-dismiss" id="extremeGrowthDismiss" aria-label="Dismiss">&times;</button>
+          <p id="extremeGrowthText"></p>
         </div>
         <p class="longevity-disclaimer" id="longevityDisclaimer" style="display:none;">This projection assumes consistent returns and spending — real markets and life are less predictable. This is a simplified educational model, not a guarantee.</p>
 
@@ -1302,6 +1384,10 @@
   var withdrawalRateEl = document.getElementById("withdrawalRate");
   var withdrawalRateNumber = document.getElementById("withdrawalRateNumber");
 
+  var inflationRateEl = document.getElementById("inflationRate");
+  var inflationRateNumber = document.getElementById("inflationRateNumber");
+  var inflationInfoTip = document.getElementById("inflationInfoTip");
+
   var ssAgeSliderEl = document.getElementById("ssAgeSlider");
   var ssAgeNumberEl = document.getElementById("ssAgeNumber");
   var ssBenefitEl = document.getElementById("ssBenefit");
@@ -1309,11 +1395,21 @@
   var ssLegendTextEl = document.getElementById("ssLegendText");
   var retireLegendItemEl = document.getElementById("retireLegendItem");
   var retireLegendTextEl = document.getElementById("retireLegendText");
+  var withdrawBarLegendItemEl = document.getElementById("withdrawBarLegendItem");
 
   var longevityCalloutEl = document.getElementById("longevityCallout");
   var longevityHeadlineEl = document.getElementById("longevityHeadline");
   var longevitySubEl = document.getElementById("longevitySub");
   var longevityDisclaimerEl = document.getElementById("longevityDisclaimer");
+  var extremeGrowthNoteEl = document.getElementById("extremeGrowthNote");
+  var extremeGrowthTextEl = document.getElementById("extremeGrowthText");
+  var extremeGrowthDismissEl = document.getElementById("extremeGrowthDismiss");
+  var extremeGrowthDismissed = false;
+  extremeGrowthDismissEl.addEventListener("click", function () {
+    extremeGrowthDismissed = true;
+    extremeGrowthNoteEl.style.display = "none";
+  });
+  var chartTooltipEl = document.getElementById("chartTooltip");
 
   var srReturnRef = document.getElementById("srReturnRef");
   var srWithdrawalRef = document.getElementById("srWithdrawalRef");
@@ -1540,10 +1636,11 @@
   bindSliderPair(expensesSlider, expensesNumber, recalc);
   bindSliderPair(returnRateEl, returnRateNumber, recalc);
   bindSliderPair(withdrawalRateEl, withdrawalRateNumber, recalc);
+  bindSliderPair(inflationRateEl, inflationRateNumber, recalc);
   bindSliderPair(ssAgeSliderEl, ssAgeNumberEl, recalc);
   ssBenefitEl.addEventListener("input", recalc);
 
-  var allInfoTips = [returnInfoTip, cityInfoTip];
+  var allInfoTips = [returnInfoTip, cityInfoTip, inflationInfoTip];
   allInfoTips.forEach(function (tip) {
     tip.querySelector("button").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -1607,10 +1704,17 @@
     chartCtx.restore();
   }
 
-  function drawMarkerLabel(chartInstance, xPixel, lines, topOffset) {
-    var yScale = chartInstance.scales.y;
+  var MARKER_LABEL_FONT = "11px 'Spline Sans Mono', monospace";
+  var MARKER_LABEL_LINE_HEIGHT = 12;
+
+  function measureMarkerLabel(chartInstance, xPixel, lines, topOffset) {
     var area = chartInstance.chartArea;
     var chartCtx = chartInstance.ctx;
+    chartCtx.font = MARKER_LABEL_FONT;
+    var textWidth = 0;
+    lines.forEach(function (line) {
+      textWidth = Math.max(textWidth, chartCtx.measureText(line).width);
+    });
     var edgeMargin = 100;
     var align = "center";
     var textX = xPixel;
@@ -1621,13 +1725,31 @@
       align = "right";
       textX = area.right - 6;
     }
+    var left, right;
+    if (align === "left") { left = textX; right = textX + textWidth; }
+    else if (align === "right") { left = textX - textWidth; right = textX; }
+    else { left = textX - textWidth / 2; right = textX + textWidth / 2; }
+    var top = area.top + topOffset;
+    var bottom = top + lines.length * MARKER_LABEL_LINE_HEIGHT;
+    return { lines: lines, align: align, textX: textX, top: top, bottom: bottom, left: left, right: right };
+  }
+
+  function boxesOverlap(a, b) {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+  }
+
+  function drawMarkerLabelBox(chartInstance, box) {
+    var chartCtx = chartInstance.ctx;
     chartCtx.save();
+    var padX = 6, padY = 3;
+    chartCtx.fillStyle = "rgba(245, 238, 218, 0.9)";
+    chartCtx.fillRect(box.left - padX, box.top - padY, (box.right - box.left) + padX * 2, (box.bottom - box.top) + padY * 2 - 4);
     chartCtx.fillStyle = cssVar("--text-body");
-    chartCtx.font = "11px 'Spline Sans Mono', monospace";
-    chartCtx.textAlign = align;
+    chartCtx.font = MARKER_LABEL_FONT;
+    chartCtx.textAlign = box.align;
     chartCtx.textBaseline = "top";
-    lines.forEach(function (line, i) {
-      chartCtx.fillText(line, textX, yScale.top + topOffset + i * 12);
+    box.lines.forEach(function (line, i) {
+      chartCtx.fillText(line, box.textX, box.top + i * MARKER_LABEL_LINE_HEIGHT);
     });
     chartCtx.restore();
   }
@@ -1675,29 +1797,98 @@
     },
     afterDraw: function (chartInstance) {
       var retireAge = chartInstance.$retireAge;
-      if (retireAge != null) {
-        var retireX = pixelForAge(chartInstance, retireAge);
-        if (retireX != null) {
-          var withdrawal = chartInstance.$withdrawalForAge ? chartInstance.$withdrawalForAge(retireAge) : null;
-          var lines = ["🥂 Work optional begins"];
-          if (withdrawal != null) lines.push(fmtMoney(withdrawal) + "/yr withdrawal");
-          drawDashedMarker(chartInstance, retireX, cssVar("--citrine-600"));
-          drawMarkerLabel(chartInstance, retireX, lines, 4);
-        }
+      var retireX = retireAge != null ? pixelForAge(chartInstance, retireAge) : null;
+      var retireBox = null;
+      if (retireX != null) {
+        var withdrawal = chartInstance.$withdrawalForAge ? chartInstance.$withdrawalForAge(retireAge) : null;
+        var retireLines = ["🥂 Work optional begins"];
+        if (withdrawal != null) retireLines.push(fmtMoney(withdrawal) + "/yr withdrawal");
+        retireBox = measureMarkerLabel(chartInstance, retireX, retireLines, 4);
       }
 
       var ssAge = chartInstance.$ssClaimAge;
-      if (ssAge != null) {
-        var ssX = pixelForAge(chartInstance, ssAge);
-        if (ssX != null) {
-          var ssInWithdrawal = retireAge != null && ssAge >= retireAge;
-          var ssColor = ssInWithdrawal ? cssVar("--citrine-600") : cssVar("--text-muted");
-          drawDashedMarker(chartInstance, ssX, ssColor);
-          drawMarkerLabel(chartInstance, ssX, chartInstance.$ssLabelLines || ["💰 Social Security starts"], 32);
+      var ssX = ssAge != null ? pixelForAge(chartInstance, ssAge) : null;
+      var ssBox = null;
+      if (ssX != null) {
+        var ssLines = chartInstance.$ssLabelLines || ["💰 Social Security starts"];
+        ssBox = measureMarkerLabel(chartInstance, ssX, ssLines, 4);
+        if (retireBox && boxesOverlap(retireBox, ssBox)) {
+          var stackedOffset = (retireBox.bottom - chartInstance.chartArea.top) + 8;
+          ssBox = measureMarkerLabel(chartInstance, ssX, ssLines, stackedOffset);
         }
       }
+
+      if (retireX != null) drawDashedMarker(chartInstance, retireX, cssVar("--citrine-600"));
+      if (ssX != null) {
+        var ssInWithdrawal = retireAge != null && ssAge >= retireAge;
+        drawDashedMarker(chartInstance, ssX, ssInWithdrawal ? cssVar("--citrine-600") : cssVar("--text-muted"));
+      }
+      if (retireBox) drawMarkerLabelBox(chartInstance, retireBox);
+      if (ssBox) drawMarkerLabelBox(chartInstance, ssBox);
+
+      chartInstance.$milestoneLabelBoxes = [retireBox, ssBox].filter(Boolean);
     }
   };
+
+  function externalTooltipHandler(context) {
+    var tooltipModel = context.tooltip;
+    if (!tooltipModel || tooltipModel.opacity === 0) {
+      chartTooltipEl.style.opacity = 0;
+      return;
+    }
+
+    var html = "";
+    (tooltipModel.title || []).forEach(function (t) {
+      html += '<div class="tt-title">' + t + "</div>";
+    });
+    (tooltipModel.body || []).forEach(function (b) {
+      b.lines.forEach(function (line) {
+        html += '<div class="tt-line">' + line + "</div>";
+      });
+    });
+    chartTooltipEl.innerHTML = html;
+
+    var chartInstance = context.chart;
+    var area = chartInstance.chartArea;
+    var gap = 12;
+
+    var ttWidth = chartTooltipEl.offsetWidth;
+    var ttHeight = chartTooltipEl.offsetHeight;
+
+    var caretX = tooltipModel.caretX;
+    var caretY = tooltipModel.caretY;
+
+    var top = caretY + gap;
+    if (top + ttHeight > area.bottom) {
+      top = caretY - gap - ttHeight;
+    }
+
+    var boxes = chartInstance.$milestoneLabelBoxes || [];
+    var collidesWith = boxes.filter(function (b) {
+      return top < b.bottom + 4 && (top + ttHeight) > b.top - 4;
+    });
+    if (collidesWith.length) {
+      var maxBottom = Math.max.apply(null, collidesWith.map(function (b) { return b.bottom; }));
+      var minTop = Math.min.apply(null, collidesWith.map(function (b) { return b.top; }));
+      if (maxBottom + gap + ttHeight <= area.bottom) {
+        top = maxBottom + gap;
+      } else if (minTop - gap - ttHeight >= area.top) {
+        top = minTop - gap - ttHeight;
+      } else {
+        top = area.bottom - ttHeight - gap;
+      }
+    }
+
+    var left = caretX + gap;
+    if (left + ttWidth > area.right) {
+      left = caretX - gap - ttWidth;
+    }
+    if (left < area.left) left = area.left;
+
+    chartTooltipEl.style.left = left + "px";
+    chartTooltipEl.style.top = top + "px";
+    chartTooltipEl.style.opacity = 1;
+  }
 
   var chart = new Chart(ctx, {
     type: "line",
@@ -1729,6 +1920,19 @@
           stepped: "after",
           pointRadius: 0,
           pointHoverRadius: 0
+        },
+        {
+          type: "bar",
+          label: "Annual withdrawal",
+          data: [],
+          backgroundColor: "rgba(156, 148, 47, 0.55)",
+          hoverBackgroundColor: cssVar("--citrine-600"),
+          borderWidth: 0,
+          borderRadius: 2,
+          barPercentage: 0.7,
+          categoryPercentage: 0.9,
+          yAxisID: "yWithdraw",
+          order: 1
         }
       ]
     },
@@ -1740,25 +1944,12 @@
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: cssVar("--text-strong"),
-          titleColor: cssVar("--surface-card"),
-          bodyColor: cssVar("--surface-card"),
-          titleFont: { family: "'Spline Sans Mono', monospace" },
-          bodyFont: { family: "'Spline Sans Mono', monospace" },
-          padding: 10,
-          cornerRadius: 8,
+          enabled: false,
+          external: externalTooltipHandler,
           callbacks: {
             title: function (items) { return "Age " + items[0].label; },
             label: function (item) {
               return item.dataset.label + ": " + fmtMoney(item.parsed.y);
-            },
-            afterLabel: function (item) {
-              if (item.datasetIndex !== 0) return null;
-              var chartInstance = item.chart;
-              var retireAge = chartInstance.$retireAge;
-              var age = parseFloat(item.label);
-              if (retireAge == null || isNaN(age) || age < retireAge || !chartInstance.$withdrawalForAge) return null;
-              return "Withdrawing " + fmtMoney(chartInstance.$withdrawalForAge(age)) + "/yr";
             }
           }
         }
@@ -1777,6 +1968,12 @@
             font: { family: "'Spline Sans Mono', monospace", size: 11 },
             callback: function (v) { return fmtMoneyCompact(v); }
           }
+        },
+        yWithdraw: {
+          display: false,
+          position: "right",
+          beginAtZero: true,
+          grid: { display: false }
         }
       }
     }
@@ -1950,6 +2147,7 @@
     var targetExpenses = income * expensesPct;
     var returnRate = parseFloat(returnRateEl.value) / 100;
     var withdrawalRate = parseFloat(withdrawalRateEl.value) / 100;
+    var inflationRate = parseFloat(inflationRateEl.value) / 100;
 
     var workOptionalNumber = withdrawalRate > 0 ? targetExpenses / withdrawalRate : 0;
 
@@ -1962,6 +2160,13 @@
     }
     function withdrawalNeedForAge(age) {
       return (ssBenefit > 0 && age >= ssAge) ? reducedExpenses : targetExpenses;
+    }
+    // grows the withdrawal need with inflation each year once the withdrawal phase starts,
+    // so the dollar figure shown keeps pace with rising costs (nominal terms)
+    function nominalWithdrawalForAge(age) {
+      var woAge = currentAge + crossingYear;
+      var yearsIn = Math.max(0, age - woAge - 1);
+      return withdrawalNeedForAge(age) * Math.pow(1 + inflationRate, yearsIn);
     }
 
     ssLegendItemEl.style.display = ssBenefit > 0 ? "inline-flex" : "none";
@@ -1997,7 +2202,7 @@
         }
       } else {
         if (ageThisYear > END_AGE) break;
-        balance = balance * (1 + returnRate) - withdrawalNeedForAge(ageThisYear);
+        balance = balance * (1 + returnRate) - nominalWithdrawalForAge(ageThisYear);
         if (balance < 0) balance = 0;
         balances.push(balance);
         ages.push(ageThisYear);
@@ -2007,6 +2212,7 @@
 
     var taxEstimate = updateTaxEstimate(income);
     var workOptionalAge = crossingYear >= 0 ? currentAge + crossingYear : null;
+    var workOptionalBalance = crossingYear >= 0 ? balances[crossingYear] : null;
     var endAge = ages[ages.length - 1];
     var finalBalance = balances[balances.length - 1];
     var hasRetirementPhase = workOptionalAge !== null && workOptionalAge < endAge;
@@ -2021,6 +2227,7 @@
       crossingYear: crossingYear,
       crossingTarget: crossingTarget,
       workOptionalAge: workOptionalAge,
+      workOptionalBalance: workOptionalBalance,
       endAge: endAge,
       finalBalance: finalBalance,
       hasRetirementPhase: hasRetirementPhase,
@@ -2034,7 +2241,7 @@
 
     renderResult();
     renderLongevity();
-    renderChart(ages, balances, targetForAge, withdrawalNeedForAge, crossingYear, ssAge, ssBenefit, workOptionalAge);
+    renderChart(ages, balances, targetForAge, nominalWithdrawalForAge, crossingYear, ssAge, ssBenefit, workOptionalAge);
   }
 
   function renderResult() {
@@ -2063,30 +2270,49 @@
       longevityCalloutEl.style.display = "none";
       longevityDisclaimerEl.style.display = "none";
       retireLegendItemEl.style.display = "none";
+      withdrawBarLegendItemEl.style.display = "none";
+      extremeGrowthNoteEl.style.display = "none";
       return;
     }
 
     retireLegendItemEl.style.display = "inline-flex";
     retireLegendTextEl.textContent = "🥂 Work optional begins (age " + r.workOptionalAge + ")";
+    withdrawBarLegendItemEl.style.display = "inline-flex";
 
     longevityCalloutEl.style.display = "block";
     longevityDisclaimerEl.style.display = "block";
     var retirementYears = r.endAge - r.workOptionalAge;
 
+    var isExtreme = false;
     if (r.moneyLasts) {
       longevityCalloutEl.classList.remove("caution");
       longevityHeadlineEl.textContent = "Your money is projected to last.";
       longevitySubEl.textContent = "At these assumptions, your portfolio is still projected to be worth " +
         fmtMoney(r.finalBalance) + " at age " + r.endAge + " — " + retirementYears + " years after going work optional.";
+
+      var multiplier = (r.workOptionalBalance && r.workOptionalBalance > 0) ? r.finalBalance / r.workOptionalBalance : 0;
+      isExtreme = multiplier >= 25 || r.finalBalance >= 50000000;
     } else {
       longevityCalloutEl.classList.add("caution");
       longevityHeadlineEl.textContent = "Your portfolio may not stretch the whole way.";
       longevitySubEl.textContent = "At these assumptions, your portfolio is projected to run out around age " +
         r.depletionAge + ". A lower withdrawal rate, reduced expenses, or working a bit longer could help.";
     }
+
+    if (isExtreme && !extremeGrowthDismissed) {
+      var returnPct = Math.round(r.returnRate * 1000) / 10;
+      var doublingYears = returnPct > 0 ? Math.round(72 / returnPct) : 0;
+      extremeGrowthTextEl.textContent = "Heads up — a " + returnPct + "% return held perfectly steady for " +
+        retirementYears + " years compounds into a very large number (money roughly doubles every " +
+        doublingYears + " years). Real markets don't move in a straight line — this is a simplified model, " +
+        "not a prediction. Try a more conservative return rate to see a range of outcomes.";
+      extremeGrowthNoteEl.style.display = "block";
+    } else {
+      extremeGrowthNoteEl.style.display = "none";
+    }
   }
 
-  function renderChart(ages, balances, targetForAge, withdrawalNeedForAge, crossingYear, ssAge, ssBenefit, workOptionalAge) {
+  function renderChart(ages, balances, targetForAge, withdrawalForAge, crossingYear, ssAge, ssBenefit, workOptionalAge) {
     var labels = ages;
     var data = balances;
     var targetLine = labels.map(function (age, i) {
@@ -2094,11 +2320,19 @@
       return targetForAge(age);
     });
 
+    var withdrawalBars = labels.map(function (age, i) {
+      if (crossingYear < 0 || i <= crossingYear || balances[i] <= 0) return null;
+      return withdrawalForAge(age);
+    });
+    var maxWithdrawal = withdrawalBars.reduce(function (m, v) { return v != null && v > m ? v : m; }, 0);
+
     chart.data.labels = labels;
     chart.data.datasets[0].data = data;
     chart.data.datasets[1].data = targetLine;
+    chart.data.datasets[2].data = withdrawalBars;
+    chart.options.scales.yWithdraw.max = maxWithdrawal > 0 ? maxWithdrawal * 4 : undefined;
 
-    chart.$withdrawalForAge = withdrawalNeedForAge;
+    chart.$withdrawalForAge = withdrawalForAge;
 
     chart.$retireAge = (crossingYear >= 0 && workOptionalAge != null && labels.indexOf(workOptionalAge) !== -1)
       ? workOptionalAge : null;
@@ -2107,7 +2341,7 @@
     var ssInWithdrawal = ssVisible && workOptionalAge != null && ssAge >= workOptionalAge;
     chart.$ssClaimAge = ssVisible ? ssAge : null;
     chart.$ssLabelLines = ssInWithdrawal
-      ? ["💰 Social Security starts", "↓ down to " + fmtMoney(withdrawalNeedForAge(ssAge)) + "/yr"]
+      ? ["💰 Social Security starts", "↓ down to " + fmtMoney(withdrawalForAge(ssAge)) + "/yr"]
       : ["💰 Social Security starts"];
 
     chart.update();
