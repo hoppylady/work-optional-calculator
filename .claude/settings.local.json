@@ -44,7 +44,8 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8791/index.html)",
       "Bash(lsof -ti:8791)",
       "Bash(python3 -m http.server 8792)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8792/index.html)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8792/index.html)",
+      "Skill(claude-in-chrome)"
     ]
   }
 }
