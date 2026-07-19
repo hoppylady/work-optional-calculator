@@ -589,7 +589,7 @@
     height: 0;
   }
   .chart-legend-note .swatch.withdraw-bar {
-    background: rgba(156, 148, 47, 0.55);
+    background: rgba(185, 133, 47, 0.65);
     height: 10px;
     border-radius: 2px;
   }
@@ -1720,8 +1720,13 @@
 
   var MARKER_LABEL_FONT = "11px 'Spline Sans Mono', monospace";
   var MARKER_LABEL_LINE_HEIGHT = 12;
+  // Fixed vertical fractions (0 = chart top, 1 = chart bottom) so each milestone label sits
+  // roughly mid-chart on its own dotted line, staggered so the two never collide regardless
+  // of how close their ages are horizontally.
+  var MARKER_LABEL_RETIRE_FRACTION = 0.42;
+  var MARKER_LABEL_SS_FRACTION = 0.58;
 
-  function measureMarkerLabel(chartInstance, xPixel, lines, topOffset) {
+  function measureMarkerLabel(chartInstance, xPixel, lines, centerFraction) {
     var area = chartInstance.chartArea;
     var chartCtx = chartInstance.ctx;
     chartCtx.font = MARKER_LABEL_FONT;
@@ -1743,21 +1748,26 @@
     if (align === "left") { left = textX; right = textX + textWidth; }
     else if (align === "right") { left = textX - textWidth; right = textX; }
     else { left = textX - textWidth / 2; right = textX + textWidth / 2; }
-    var top = area.top + topOffset;
-    var bottom = top + lines.length * MARKER_LABEL_LINE_HEIGHT;
+    var labelHeight = lines.length * MARKER_LABEL_LINE_HEIGHT;
+    var center = area.top + (area.bottom - area.top) * centerFraction;
+    var top = center - labelHeight / 2;
+    var bottom = top + labelHeight;
     return { lines: lines, align: align, textX: textX, top: top, bottom: bottom, left: left, right: right };
-  }
-
-  function boxesOverlap(a, b) {
-    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   }
 
   function drawMarkerLabelBox(chartInstance, box) {
     var chartCtx = chartInstance.ctx;
     chartCtx.save();
-    var padX = 6, padY = 3;
-    chartCtx.fillStyle = "rgba(245, 238, 218, 0.9)";
-    chartCtx.fillRect(box.left - padX, box.top - padY, (box.right - box.left) + padX * 2, (box.bottom - box.top) + padY * 2 - 4);
+    var padX = 8, padY = 5;
+    var boxX = box.left - padX;
+    var boxY = box.top - padY;
+    var boxW = (box.right - box.left) + padX * 2;
+    var boxH = (box.bottom - box.top) + padY * 2 - 4;
+    chartCtx.fillStyle = "rgba(245, 238, 218, 0.94)";
+    chartCtx.fillRect(boxX, boxY, boxW, boxH);
+    chartCtx.strokeStyle = cssVar("--line-strong");
+    chartCtx.lineWidth = 1;
+    chartCtx.strokeRect(boxX, boxY, boxW, boxH);
     chartCtx.fillStyle = cssVar("--text-body");
     chartCtx.font = MARKER_LABEL_FONT;
     chartCtx.textAlign = box.align;
@@ -1805,7 +1815,7 @@
       var area = chartInstance.chartArea;
       var chartCtx = chartInstance.ctx;
       chartCtx.save();
-      chartCtx.fillStyle = "rgba(156, 148, 47, 0.10)";
+      chartCtx.fillStyle = "rgba(90, 125, 79, 0.08)";
       chartCtx.fillRect(xPixel, area.top, area.right - xPixel, area.bottom - area.top);
       chartCtx.restore();
     },
@@ -1817,7 +1827,7 @@
         var withdrawal = chartInstance.$withdrawalForAge ? chartInstance.$withdrawalForAge(retireAge) : null;
         var retireLines = ["🥂 Work optional begins"];
         if (withdrawal != null) retireLines.push(fmtMoney(withdrawal) + "/yr withdrawal");
-        retireBox = measureMarkerLabel(chartInstance, retireX, retireLines, 4);
+        retireBox = measureMarkerLabel(chartInstance, retireX, retireLines, MARKER_LABEL_RETIRE_FRACTION);
       }
 
       var ssAge = chartInstance.$ssClaimAge;
@@ -1825,11 +1835,7 @@
       var ssBox = null;
       if (ssX != null) {
         var ssLines = chartInstance.$ssLabelLines || ["💰 Social Security starts"];
-        ssBox = measureMarkerLabel(chartInstance, ssX, ssLines, 4);
-        if (retireBox && boxesOverlap(retireBox, ssBox)) {
-          var stackedOffset = (retireBox.bottom - chartInstance.chartArea.top) + 8;
-          ssBox = measureMarkerLabel(chartInstance, ssX, ssLines, stackedOffset);
-        }
+        ssBox = measureMarkerLabel(chartInstance, ssX, ssLines, MARKER_LABEL_SS_FRACTION);
       }
 
       if (retireX != null) drawDashedMarker(chartInstance, retireX, cssVar("--citrine-600"));
@@ -1913,8 +1919,8 @@
         {
           label: "Projected portfolio value",
           data: [],
-          borderColor: function (context) { return phaseGradient(context, cssVar("--wine-600"), cssVar("--citrine-600")); },
-          backgroundColor: function (context) { return phaseGradient(context, cssVar("--wine-wash"), "rgba(156, 148, 47, 0.18)"); },
+          borderColor: cssVar("--wine-600"),
+          backgroundColor: function (context) { return phaseGradient(context, cssVar("--wine-wash"), "rgba(90, 125, 79, 0.16)"); },
           borderWidth: 2,
           fill: true,
           tension: 0.25,
@@ -1939,8 +1945,8 @@
           type: "bar",
           label: "Annual withdrawal",
           data: [],
-          backgroundColor: "rgba(156, 148, 47, 0.55)",
-          hoverBackgroundColor: cssVar("--citrine-600"),
+          backgroundColor: "rgba(185, 133, 47, 0.65)",
+          hoverBackgroundColor: cssVar("--caution"),
           borderWidth: 0,
           borderRadius: 2,
           barPercentage: 0.7,

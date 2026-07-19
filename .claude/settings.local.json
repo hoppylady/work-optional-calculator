@@ -42,7 +42,9 @@
       "Bash(python3 -m http.server 8791)",
       "Bash(echo \"started with pid $!\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8791/index.html)",
-      "Bash(lsof -ti:8791)"
+      "Bash(lsof -ti:8791)",
+      "Bash(python3 -m http.server 8792)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8792/index.html)"
     ]
   }
 }
