@@ -1222,9 +1222,9 @@
           <label class="field-label" for="ssBenefit">Estimated annual benefit</label>
           <div class="input-shell">
             <span class="prefix">$</span>
-            <input type="text" inputmode="numeric" id="ssBenefit" class="with-prefix" value="24,000">
+            <input type="text" inputmode="numeric" id="ssBenefit" class="with-prefix" value="36,000">
           </div>
-          <p class="slider-sub">A rough placeholder — get your real number from your <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener">ssa.gov account</a>. Set to $0 to leave Social Security out of the math entirely.</p>
+          <p class="slider-sub">A rough estimate based on your income (~40% wage replacement) — get your real number from your <a href="https://www.ssa.gov/myaccount/" target="_blank" rel="noopener">ssa.gov account</a>. Set to $0 to leave Social Security out of the math entirely.</p>
         </div>
         </div>
       </div>
@@ -1677,8 +1677,22 @@
     allInfoTips.forEach(function (t) { t.classList.remove("open"); });
   });
 
+  // ---------- social security default (rough estimate, scales with income) ----------
+  // SS benefits are progressive (replace a higher % of income for lower earners), but as a
+  // simple placeholder we assume ~40% wage replacement, capped near the real-world max benefit.
+  var SS_REPLACEMENT_RATE = 0.4;
+  var SS_MAX_ANNUAL_BENEFIT = 60000;
+  var ssBenefitUserEdited = false;
+  ssBenefitEl.addEventListener("input", function () { ssBenefitUserEdited = true; });
+  function suggestedSSBenefit(income) {
+    return Math.min(SS_MAX_ANNUAL_BENEFIT, Math.round((income * SS_REPLACEMENT_RATE) / 100) * 100);
+  }
+
   annualIncomeEl.addEventListener("input", function () {
     updateExpensesPreview();
+    if (!ssBenefitUserEdited) {
+      ssBenefitEl.value = fmtInt(suggestedSSBenefit(parseNum(annualIncomeEl.value)));
+    }
     recalc();
   });
   totalInvestedEl.addEventListener("input", function () {
@@ -2073,6 +2087,7 @@
   }
 
   // ---------- core calc ----------
+  var END_AGE = 95; // shared ceiling: accumulation search AND withdrawal drawdown both stop here
   var lastResult = null;
 
   function recalc() {
@@ -2112,9 +2127,7 @@
     updateExpensesPreview();
     renderSavingsTable(returnRate, withdrawalRate);
 
-    // project year by year: accumulate until work-optional, then draw down through a reasonable end age
-    var MAX_YEARS = 70;
-    var END_AGE = 95;
+    // project year by year: accumulate until work-optional, then draw down — both phases capped at END_AGE
     var balances = [totalInvested];
     var ages = [currentAge];
     var crossingYear = -1;
@@ -2126,7 +2139,7 @@
 
     var balance = totalInvested;
     var depletionAge = null;
-    for (var y = 1; y <= MAX_YEARS; y++) {
+    for (var y = 1; currentAge + y <= END_AGE; y++) {
       var ageThisYear = currentAge + y;
       if (crossingYear === -1) {
         balance = balance * (1 + returnRate) + annualInvest;
@@ -2138,7 +2151,6 @@
           crossingTarget = targetThisYear;
         }
       } else {
-        if (ageThisYear > END_AGE) break;
         balance = balance * (1 + returnRate) - nominalWithdrawalForAge(ageThisYear);
         if (balance < 0) balance = 0;
         balances.push(balance);
@@ -2179,10 +2191,10 @@
   function renderResult() {
     var r = lastResult;
     if (r.crossingYear === -1) {
-      resultEyebrowEl.textContent = "Not there yet, within";
-      resultAgeEl.textContent = "70 years";
+      resultEyebrowEl.textContent = "Not there yet, by";
+      resultAgeEl.textContent = "Age " + END_AGE;
       resultSubEl.textContent = "At these numbers, you don't cross " + fmtMoney(r.workOptionalNumber) +
-        " within 70 years. Try increasing contributions or adjusting assumptions.";
+        " by age " + END_AGE + ". Try increasing contributions or adjusting assumptions.";
       wineLineEl.textContent = "This one may need a different vineyard — try adjusting your inputs.";
       return;
     }
@@ -2559,6 +2571,7 @@
   setBreakdownOpen(false);
   updateMatrixLimits();
   updateExpensesPreview();
+  ssBenefitEl.value = fmtInt(suggestedSSBenefit(parseNum(annualIncomeEl.value)));
   drawIncomeSplitChart();
   recalc();
 })();
