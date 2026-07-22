@@ -888,7 +888,7 @@
     overflow: hidden;
   }
   .sr-bar-fill {
-    background: var(--citrine-600);
+    background: var(--wine-600);
     height: 100%;
     border-radius: 4px;
   }
@@ -926,11 +926,11 @@
       <div class="income-split-visual">
         <canvas id="incomeSplitChart" width="220" height="220" role="img" aria-label="Illustrative pie chart of where a dollar of income goes: 50% invested, 40% spent, 10% saved"></canvas>
         <div class="pie-legend">
-          <span><span class="pie-swatch" style="background:var(--citrine-600)"></span>Invested 50%</span>
-          <span><span class="pie-swatch" style="background:var(--wine-600)"></span>Spent 40%</span>
+          <span><span class="pie-swatch" style="background:var(--wine-600)"></span>Invested 50%</span>
+          <span><span class="pie-swatch" style="background:var(--citrine-600)"></span>Spent 40%</span>
           <span><span class="pie-swatch" style="background:var(--sand-300)"></span>Saved 10%</span>
         </div>
-        <p class="pie-caption">A lot of people save diligently and assume that's enough — but saved money sitting in a bank account isn't the same as invested money. Only the invested slice is working toward the numbers on the right.</p>
+        <p class="pie-caption">Spending and investing both matter — but only one of them ages like this portfolio does. The invested slice is the one quietly getting better with time.</p>
       </div>
       <div class="income-split-text">
         <p class="section-sub">
@@ -2154,8 +2154,8 @@
     pieCtx.scale(dpr, dpr);
 
     var slices = [
-      { pct: 50, color: cssVar("--citrine-600") },
-      { pct: 40, color: cssVar("--wine-600") },
+      { pct: 50, color: cssVar("--wine-600") },
+      { pct: 40, color: cssVar("--citrine-600") },
       { pct: 10, color: cssVar("--sand-300") }
     ];
 
