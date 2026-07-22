@@ -959,6 +959,7 @@
           <div class="input-shell">
             <input type="number" id="currentAge" value="30" min="18" max="80" step="1">
           </div>
+          <p class="limit-warning" id="currentAgeHint"></p>
         </div>
 
         <div class="field">
@@ -1283,6 +1284,9 @@
   </div>
 
   <p class="disclaimer">This is an educational tool, not financial advice.</p>
+  <p class="disclaimer" style="margin-top:8px;">
+    <button type="button" id="resetDefaultsBtn" class="toggle-link" style="margin-top:0;">Reset all inputs to defaults</button>
+  </p>
 
 </div>
 
@@ -1331,6 +1335,43 @@
     });
   }
 
+  // percent-mode formatting for investAmount only: digits + a single decimal point,
+  // no comma grouping. Kept separate from liveFormatMoneyInput so the other 13
+  // money fields are completely unaffected.
+  function formatPercentInput(raw) {
+    var seenDot = false, out = "";
+    for (var i = 0; i < raw.length; i++) {
+      var c = raw[i];
+      if (c >= "0" && c <= "9") { out += c; }
+      else if (c === "." && !seenDot) { out += c; seenDot = true; }
+    }
+    return out;
+  }
+  function liveFormatInvestAmountInput(el) {
+    el.addEventListener("input", function () {
+      if (investMode === "dollar") {
+        var cursorPos = el.selectionStart;
+        var oldValue = el.value;
+        var digitsBeforeCursor = oldValue.slice(0, cursorPos).replace(/[^0-9]/g, "").length;
+        var rawDigits = oldValue.replace(/[^0-9]/g, "");
+        var formatted = formatWithCommas(rawDigits);
+        el.value = formatted;
+        var newPos = 0, digitCount = 0;
+        while (newPos < formatted.length && digitCount < digitsBeforeCursor) {
+          if (/[0-9]/.test(formatted[newPos])) digitCount++;
+          newPos++;
+        }
+        try { el.setSelectionRange(newPos, newPos); } catch (e) {}
+      } else {
+        var pCursor = el.selectionStart;
+        var pOld = el.value;
+        var validBeforeCursor = formatPercentInput(pOld.slice(0, pCursor)).length;
+        el.value = formatPercentInput(pOld);
+        try { el.setSelectionRange(validBeforeCursor, validBeforeCursor); } catch (e) {}
+      }
+    });
+  }
+
   // paired slider <-> number input, kept in sync
   function bindSliderPair(sliderEl, numberEl, onChange) {
     var min = parseFloat(sliderEl.min), max = parseFloat(sliderEl.max);
@@ -1357,6 +1398,7 @@
 
   // ---------- element refs ----------
   var currentAgeEl = document.getElementById("currentAge");
+  var currentAgeHintEl = document.getElementById("currentAgeHint");
   var annualIncomeEl = document.getElementById("annualIncome");
   var totalInvestedEl = document.getElementById("totalInvested");
 
@@ -1450,8 +1492,9 @@
   var emailInput = document.getElementById("emailInput");
   var emailSubmitBtn = document.getElementById("emailSubmitBtn");
   var emailConfirm = document.getElementById("emailConfirm");
+  var resetDefaultsBtn = document.getElementById("resetDefaultsBtn");
 
-  [annualIncomeEl, totalInvestedEl, investAmountEl, ssBenefitEl]
+  [annualIncomeEl, totalInvestedEl, ssBenefitEl]
     .concat(Object.keys(matBalance).map(function (k) { return matBalance[k]; }))
     .concat(Object.keys(matContribution).map(function (k) { return matContribution[k]; }))
     .forEach(liveFormatMoneyInput);
@@ -1488,6 +1531,7 @@
     }
     recalc();
   });
+  liveFormatInvestAmountInput(investAmountEl);
   investAmountEl.addEventListener("input", function () {
     investMaxCheckbox.checked = false;
     recalc();
@@ -1495,6 +1539,10 @@
   investAmountEl.addEventListener("blur", function () {
     if (investMode === "dollar") {
       investAmountEl.value = fmtInt(parseNum(investAmountEl.value));
+    } else {
+      var v = investAmountEl.value;
+      if (v === "" || v === ".") { investAmountEl.value = "0"; }
+      else if (v.charAt(v.length - 1) === ".") { investAmountEl.value = v.slice(0, -1); }
     }
   });
 
@@ -1526,6 +1574,10 @@
   var breakdownOpen = false;
   var hsaCoverage = "self"; // or "family"
   var currentLimits = { k401: 24500, ira: 7500, hsa: 4400 };
+  // tracks how much of matContribution.taxable's current value is attributable to a
+  // redirected overflow from each limited account, so repeated edits adjust taxable
+  // by the delta rather than double-crediting the same overflow on every keystroke.
+  var matOverflow = { traditionalIRA: 0, rothIRA: 0, k401: 0, hsa: 0 };
 
   function get401kLimit(age) { return age >= 50 ? 32500 : 24500; }
   function getIRALimit(age) { return age >= 50 ? 8600 : 7500; }
@@ -1553,8 +1605,17 @@
       : "";
   }
 
+  function updateCurrentAgeHint(age) {
+    if (age < 18 || age > 90) {
+      currentAgeHintEl.textContent = "Heads up — age " + age + " is outside the typical 18–90 range for this tool; results may not be meaningful.";
+    } else {
+      currentAgeHintEl.textContent = "";
+    }
+  }
+
   function updateMatrixLimits() {
     var age = Math.max(0, parseNum(currentAgeEl.value));
+    updateCurrentAgeHint(age);
 
     var limit401k = get401kLimit(age);
     limitNote401kEl.textContent = "2026 limit: " + fmtMoney(limit401k) + (age >= 50 ? " (includes 50+ catch-up)" : "");
@@ -1591,6 +1652,43 @@
     return { balanceSum: balanceSum, contributionSum: contributionSum };
   }
 
+  function redirectOverflowDelta(key, overflow) {
+    var delta = overflow - matOverflow[key];
+    if (delta !== 0) {
+      var newTaxable = Math.max(0, parseNum(matContribution.taxable.value) + delta);
+      matContribution.taxable.value = fmtInt(newTaxable);
+    }
+    matOverflow[key] = overflow;
+  }
+
+  function enforceSingleLimit(key, limitValue) {
+    var raw = parseNum(matContribution[key].value);
+    var overflow = Math.max(0, raw - limitValue);
+    if (overflow > 0) {
+      matContribution[key].value = fmtInt(limitValue);
+    }
+    redirectOverflowDelta(key, overflow);
+  }
+
+  function enforceIRALimit(editedKey) {
+    var otherKey = editedKey === "traditionalIRA" ? "rothIRA" : "traditionalIRA";
+    var otherValue = parseNum(matContribution[otherKey].value);
+    var editedRaw = parseNum(matContribution[editedKey].value);
+    var allowedForEdited = Math.max(0, currentLimits.ira - otherValue);
+    var overflow = Math.max(0, editedRaw - allowedForEdited);
+    if (overflow > 0) {
+      matContribution[editedKey].value = fmtInt(allowedForEdited);
+    }
+    redirectOverflowDelta(editedKey, overflow);
+  }
+
+  function enforceContributionLimit(key) {
+    if (key === "k401") { enforceSingleLimit("k401", currentLimits.k401); }
+    else if (key === "hsa") { enforceSingleLimit("hsa", currentLimits.hsa); }
+    else if (key === "traditionalIRA" || key === "rothIRA") { enforceIRALimit(key); }
+    // "taxable" has no cap — nothing to enforce.
+  }
+
   Object.keys(matBalance).forEach(function (k) {
     matBalance[k].addEventListener("input", function () {
       recomputeMatrixSums();
@@ -1599,6 +1697,7 @@
   });
   Object.keys(matContribution).forEach(function (k) {
     matContribution[k].addEventListener("input", function () {
+      enforceContributionLimit(k);
       recomputeMatrixSums();
       updateMatrixWarnings();
       recalc();
@@ -1616,8 +1715,10 @@
     recalc();
   });
 
-  function setBreakdownOpen(open) {
+  function setBreakdownOpen(open, opts) {
+    opts = opts || {};
     var wasOpen = breakdownOpen;
+    var wasMaxChecked = investMaxCheckbox.checked;
     breakdownOpen = open;
     breakdownSection.classList.toggle("open", open);
     totalInvestedEl.readOnly = open;
@@ -1627,15 +1728,25 @@
     if (open) investMaxCheckbox.checked = false;
     breakdownToggle.textContent = open ? "← Use simple totals instead" : "Break this down by account →";
 
-    if (open && !wasOpen) {
+    if (open && !wasOpen && !opts.skipAutofill) {
       var balanceSum = Object.keys(matBalance).reduce(function (s, k) { return s + parseNum(matBalance[k].value); }, 0);
       if (balanceSum === 0) {
         matBalance.taxable.value = fmtInt(parseNum(totalInvestedEl.value));
       }
       var contributionSum = Object.keys(matContribution).reduce(function (s, k) { return s + parseNum(matContribution[k].value); }, 0);
       if (contributionSum === 0) {
-        matContribution.taxable.value = fmtInt(getSimpleInvestDollars());
+        if (wasMaxChecked) {
+          matContribution.k401.value = fmtInt(currentLimits.k401);
+          matContribution.traditionalIRA.value = fmtInt(currentLimits.ira);
+          matContribution.rothIRA.value = fmtInt(0);
+          matContribution.hsa.value = fmtInt(currentLimits.hsa);
+          matContribution.taxable.value = fmtInt(0);
+        } else {
+          matContribution.taxable.value = fmtInt(getSimpleInvestDollars());
+        }
       }
+    }
+    if (open && !wasOpen) {
       recomputeMatrixSums();
       updateMatrixWarnings();
     }
@@ -1701,6 +1812,15 @@
   currentAgeEl.addEventListener("input", function () {
     updateMatrixLimits();
     recalc();
+  });
+  currentAgeEl.addEventListener("blur", function () {
+    var raw = parseNum(currentAgeEl.value);
+    var clamped = Math.min(100, Math.max(1, Math.round(raw)));
+    if (String(clamped) !== currentAgeEl.value) {
+      currentAgeEl.value = clamped;
+      updateMatrixLimits();
+      recalc();
+    }
   });
 
   // ---------- wine lines (easy to edit) ----------
@@ -2137,12 +2257,35 @@
       crossingTarget = targetForAge(currentAge);
     }
 
+    // when the matrix is in use, an account contributing at/above today's limit is
+    // treated as "maxed" and its simulated contribution grows with the catch-up
+    // schedule as the projected age crosses 50 / 55; accounts below their limit stay
+    // flat for the whole projection, same as today. Simple mode (no per-account
+    // breakdown) keeps the flat annualInvest-every-year behavior unchanged.
+    var k401Contribution = 0, iraContribution = 0, hsaContribution = 0, taxableContribution = 0;
+    var k401IsMaxed = false, iraIsMaxed = false, hsaIsMaxed = false;
+    if (breakdownOpen) {
+      k401Contribution = parseNum(matContribution.k401.value);
+      iraContribution = parseNum(matContribution.traditionalIRA.value) + parseNum(matContribution.rothIRA.value);
+      hsaContribution = parseNum(matContribution.hsa.value);
+      taxableContribution = parseNum(matContribution.taxable.value);
+      k401IsMaxed = k401Contribution >= currentLimits.k401;
+      iraIsMaxed = iraContribution >= currentLimits.ira;
+      hsaIsMaxed = hsaContribution >= currentLimits.hsa;
+    }
+
     var balance = totalInvested;
     var depletionAge = null;
     for (var y = 1; currentAge + y <= END_AGE; y++) {
       var ageThisYear = currentAge + y;
       if (crossingYear === -1) {
-        balance = balance * (1 + returnRate) + annualInvest;
+        var contributionThisYear = breakdownOpen
+          ? (k401IsMaxed ? get401kLimit(ageThisYear) : k401Contribution)
+            + (iraIsMaxed ? getIRALimit(ageThisYear) : iraContribution)
+            + (hsaIsMaxed ? getHSALimit(ageThisYear, hsaCoverage) : hsaContribution)
+            + taxableContribution
+          : annualInvest;
+        balance = balance * (1 + returnRate) + contributionThisYear;
         balances.push(balance);
         ages.push(ageThisYear);
         var targetThisYear = targetForAge(ageThisYear);
@@ -2186,6 +2329,7 @@
     renderResult();
     renderLongevity();
     renderChart(ages, balances, targetForAge, nominalWithdrawalForAge, crossingYear, ssAge, ssBenefit, workOptionalAge);
+    scheduleSaveState();
   }
 
   function renderResult() {
@@ -2567,11 +2711,122 @@
     emailInput.value = "";
   });
 
+  // ---------- persistence ----------
+  var STORAGE_KEY = "woc_state";
+
+  function collectState() {
+    return {
+      currentAge: currentAgeEl.value,
+      annualIncome: annualIncomeEl.value,
+      totalInvested: totalInvestedEl.value,
+      investAmount: investAmountEl.value,
+      investMode: investMode,
+      investMax: investMaxCheckbox.checked,
+      breakdownOpen: breakdownOpen,
+      hsaCoverage: hsaCoverage,
+      matBalance: {
+        traditionalIRA: matBalance.traditionalIRA.value,
+        rothIRA: matBalance.rothIRA.value,
+        k401: matBalance.k401.value,
+        hsa: matBalance.hsa.value,
+        taxable: matBalance.taxable.value
+      },
+      matContribution: {
+        traditionalIRA: matContribution.traditionalIRA.value,
+        rothIRA: matContribution.rothIRA.value,
+        k401: matContribution.k401.value,
+        hsa: matContribution.hsa.value,
+        taxable: matContribution.taxable.value
+      },
+      expenses: expensesSlider.value,
+      returnRate: returnRateEl.value,
+      withdrawalRate: withdrawalRateEl.value,
+      inflationRate: inflationRateEl.value,
+      ssAge: ssAgeSliderEl.value,
+      ssBenefit: ssBenefitEl.value,
+      ssBenefitUserEdited: ssBenefitUserEdited
+    };
+  }
+
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); } catch (e) {}
+  }
+
+  var saveStateTimer = null;
+  function scheduleSaveState() {
+    if (saveStateTimer) clearTimeout(saveStateTimer);
+    saveStateTimer = setTimeout(saveState, 300);
+  }
+
+  function restoreState() {
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { raw = null; }
+    if (!raw) return null;
+    var s;
+    try { s = JSON.parse(raw); } catch (e) { return null; }
+    if (!s || typeof s !== "object") return null;
+
+    if (s.currentAge != null) currentAgeEl.value = s.currentAge;
+    if (s.annualIncome != null) annualIncomeEl.value = s.annualIncome;
+    if (s.totalInvested != null) totalInvestedEl.value = s.totalInvested;
+
+    if (s.matBalance) {
+      Object.keys(matBalance).forEach(function (k) {
+        if (s.matBalance[k] != null) matBalance[k].value = s.matBalance[k];
+      });
+    }
+    if (s.matContribution) {
+      Object.keys(matContribution).forEach(function (k) {
+        if (s.matContribution[k] != null) matContribution[k].value = s.matContribution[k];
+      });
+    }
+
+    if (s.investMode === "percent" || s.investMode === "dollar") { investMode = s.investMode; }
+    Array.prototype.forEach.call(investModeToggle.querySelectorAll("button"), function (b) {
+      b.classList.toggle("active", b.getAttribute("data-mode") === investMode);
+    });
+    investPrefixEl.textContent = investMode === "dollar" ? "$" : "%";
+    investAmountEl.classList.toggle("with-prefix", investMode === "dollar");
+    if (s.investAmount != null) investAmountEl.value = s.investAmount;
+    if (typeof s.investMax === "boolean") investMaxCheckbox.checked = s.investMax;
+
+    if (typeof s.hsaCoverage === "string") {
+      hsaCoverage = s.hsaCoverage;
+      Array.prototype.forEach.call(hsaCoverageToggleEl.querySelectorAll("button"), function (b) {
+        b.classList.toggle("active", b.getAttribute("data-coverage") === hsaCoverage);
+      });
+    }
+
+    if (s.expenses != null) { expensesSlider.value = s.expenses; expensesNumber.value = s.expenses; }
+    if (s.returnRate != null) { returnRateEl.value = s.returnRate; returnRateNumber.value = s.returnRate; }
+    if (s.withdrawalRate != null) { withdrawalRateEl.value = s.withdrawalRate; withdrawalRateNumber.value = s.withdrawalRate; }
+    if (s.inflationRate != null) { inflationRateEl.value = s.inflationRate; inflationRateNumber.value = s.inflationRate; }
+    if (s.ssAge != null) { ssAgeSliderEl.value = s.ssAge; ssAgeNumberEl.value = s.ssAge; }
+
+    if (typeof s.ssBenefitUserEdited === "boolean") ssBenefitUserEdited = s.ssBenefitUserEdited;
+    if (s.ssBenefit != null) ssBenefitEl.value = s.ssBenefit;
+
+    return { breakdownOpen: !!s.breakdownOpen };
+  }
+
+  resetDefaultsBtn.addEventListener("click", function () {
+    if (!confirm("Reset all inputs to their defaults? This clears your saved data on this device.")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    location.reload();
+  });
+
   // ---------- init ----------
-  setBreakdownOpen(false);
-  updateMatrixLimits();
+  var restored = restoreState();
+  updateMatrixLimits(); // must run before setBreakdownOpen so currentLimits reflects the
+                        // (possibly restored) currentAge before any max-out/enforcement logic runs
+  setBreakdownOpen(restored ? restored.breakdownOpen : false, { skipAutofill: !!restored });
+  ["k401", "hsa", "traditionalIRA", "rothIRA"].forEach(enforceContributionLimit);
+  recomputeMatrixSums();
+  updateMatrixWarnings();
   updateExpensesPreview();
-  ssBenefitEl.value = fmtInt(suggestedSSBenefit(parseNum(annualIncomeEl.value)));
+  if (!ssBenefitUserEdited) {
+    ssBenefitEl.value = fmtInt(suggestedSSBenefit(parseNum(annualIncomeEl.value)));
+  }
   drawIncomeSplitChart();
   recalc();
 })();
